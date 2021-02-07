@@ -1,6 +1,5 @@
 require('dotenv').config();
 const Discord = require('discord.js');
-const config = require('./config.json');
 const bot = new Discord.Client();
 
 const prefix = '!';
@@ -11,46 +10,51 @@ bot.on('ready', () => {
   bot.user.setPresence({ status: 'online', activity: { name: '!<commandname>', type: 'WATCHING' } });
 });
 
-bot.on('message', (message) => {
-  const guild1 = message.guild;
-  const userlist = guild1.members.cache.array();
+bot.on('message', async (message) => {
+  const guild = message.guild;
 
-  const user1 = message.mentions.members.array();
-
-  if (message.content.startsWith(prefix + 'matchwith') && userlist.includes(user1[0])) {
+  if (firstMentionGuildMember && message.content.startsWith(prefix + 'matchwith')) {
     message.react('✅');
     message.react('❌');
-    message
-      .awaitReactions((reaction, user) => user.id === user1[0].user.id && reaction.emoji.name === '✅', { max: 30 })
-      .then((collected) => {
-        if (collected.first().emoji.name === '✅') {
-          const rolename1 = message.author.username;
-          const rolename2 = user1[0].user.username;
-          console.log(message.author.username);
-          message.guild.roles.create({
-            data: {
-              name: rolename1,
-              color: 'BLUE',
-            },
-          });
-          message.guild.roles.create({
-            data: {
-              name: rolename2,
-              color: 'RED',
-            },
-          });
 
-          console.log('it worked');
+    try {
+      const reactions = await message.awaitReactions(
+        (reaction, user) => user.id === firstMentionGuildMember.user.id && reaction.emoji.name === '✅',
+        {
+          max: 30,
         }
-      });
+      );
+      console.log(reactions);
+      if (reactions.first().emoji.name === '✅') {
+        const firstRoleName = message.author.username;
+        const secondRoleName = firstMentionGuildMember.user.username;
+        console.log(`inside condition ${firstRoleName} ${secondRoleName}`);
+        // guild.roles.create({
+        //   data: {
+        //     name: firstRoleName,
+        //     color: 'BLUE',
+        //   },
+        // });
+        // guild.roles.create({
+        //   data: {
+        //     name: secondRoleName,
+        //     color: 'RED',
+        //   },
+        // });
+
+        console.log('it worked');
+      }
+    } catch (error) {
+      console.log(error);
+    }
   }
-  const messageArr = message.content.split(' ');
-  const amount = parseInt(messageArr[1]);
-  console.log(amount);
-  console.log(message.channel);
-  if (message.content.startsWith(prefix + 'clear') && messageArr.length === 2) {
-    message.channel.bulkDelete(amount).catch(console.error);
-  }
+  // const messageArr = message.content.split(' ');
+  // const amount = parseInt(messageArr[1]);
+  // console.log(amount);
+  // console.log(message.channel);
+  // if (message.content.startsWith(prefix + 'clear') && messageArr.length === 2) {
+  //   message.channel.bulkDelete(amount).catch(console.error);
+  // }
 });
 
 process.on('unhandledRejection', (error) => {
@@ -58,7 +62,7 @@ process.on('unhandledRejection', (error) => {
 });
 
 bot.on('error', (error) => {
-  throw new Error('The websocket connection encountered an error:', error);
+  console.info('The websocket connection encountered an error:', error);
 });
 
 bot.login(process.env.BOT_TOKEN);
