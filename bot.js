@@ -37,7 +37,7 @@ bot.on("message", async (message) => {
             name: firstRoleName,
             color: "BLUE",
           },
-        });
+        }).then;
 
         guild.roles.create({
           data: {
@@ -45,6 +45,16 @@ bot.on("message", async (message) => {
             color: "RED",
           },
         });
+        setTimeout(function () {
+          
+            const role1 = guild.roles.cache.filter((r) => r.name === firstRoleName)
+            const role2 = guild.roles.cache.filter((r) => r.name === secondRoleName)
+            message.member.roles.add(role2)
+            firstMentionGuildMember.roles.add(role1)
+
+
+          ;
+        }, 1000);
         // let role1 = guild.roles.cache.array().find((r) => r.name === firstRoleName);
         // let role2 = guild.roles.cache.array().find((r) => r.name === secondRoleName);
         // console.log(role1);
