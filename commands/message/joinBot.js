@@ -4,8 +4,7 @@ const {Message,VoiceChannel} = require('discord.js')
  * @param {Message} msg 
  */
 function fn(msg){
-    let arr = msg.content.split(" ");
-    let arg = arr.slice(1).join(' ')
+    let arg = msg.content.split(" ").slice(1).join(' ')
     console.log(arg);
     const {guild} = msg
     /**

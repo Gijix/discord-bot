@@ -1,11 +1,12 @@
-const {Message} = require('discord.js')
+const {VoiceState} = require('discord.js')
 const mapFolder = require('map-folder')
 const path = mapFolder(__dirname,{
     exclude : ['index.js']
 })
 /**
  * @callback commandCallback
- * @param {Message} msg
+ * @param {VoiceState} oldstate
+ * @param {VoiceState} newState
  */
 /**
  * @typedef command

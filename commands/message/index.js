@@ -1,11 +1,12 @@
-const {Channel} = require('discord.js')
+const {Message,Client} = require('discord.js')
 const mapFolder = require('map-folder')
 const path = mapFolder(__dirname,{
     exclude : ['index.js']
 })
 /**
  * @callback commandCallback
- * @param {Channel} chan
+ * @param {Message} message
+ * @param {Client} bot
  */
 /**
  * @typedef command
