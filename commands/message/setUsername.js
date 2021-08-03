@@ -10,11 +10,6 @@ function fn(msg, bot) {
   } else {
     bot.user
       .setUsername(parsedMsg[1])
-      .then(() =>
-        msg
-          .reply("bot name is now : " + parsedMsg[1])
-          .then((message) => message.delete({timeout:2500}))
-      );
   }
 }
 const name = "setUsername";
