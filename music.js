@@ -1,47 +1,66 @@
 const { Message } = require("discord.js");
-const Client = require('./customClient')
+const Client = require("./customClient");
+const { Song } = require("discord-music-player");
+/**
+ * @typedef info
+ * @property {string} name
+ * @property {string} description
+ */
+/**
+ * @type {info[]}
+ */
+const musicInfos = [
+  {
+    name: "play",
+    description: "add a song to the server queue and init the queue",
+  },
+  { name: "stop", description: "stop the song and clear the server queuez" },
+  { name: "pause", description: "" },
+  { name: "resume", description: "" },
+  { name: "skip", description: "" },
+  { name: "toggle", description: "" },
+  { name: "remove", description: "" },
+  { name: "shuffle", description: "" },
+  { name: "seek", description: "" },
+  { name: "playlist", description: "" },
+];
 /**
  *
  * @param {Message} message
  * @param {Client} bot
  * @param {string} prefix
  */
-module.exports = async function (message,bot, prefix) {
-  const parsedMsg = message.content.trim().split(" ");
-  if (
-    message.author.bot ||
-    !message.member.voice.channelID ||
-    !parsedMsg[0].startsWith(prefix)
-  )
-    return;
-  const [play, stop, pause, resume, toggle] = [
-    "play",
-    "stop",
-    "pause",
-    "resume",
-    "toggle",
-  ];
+
+async function play(message, { player }, prefix) {
+  const args = message.content.slice(prefix.length).trim().split(/ +/g);
+  const command = args.shift().toLowerCase();
+  if (!message.member.voice.channelID) return;
+  /**
+   * @type {Song}
+   */
+  let song = null;
   try {
-    switch (parsedMsg[0].slice(1, parsedMsg[0].length)) {
-      case play:
-        let song = await bot.player.play(message, parsedMsg[1]);
+    switch (command) {
+      case "play" || "playlist":
+        song = await player[command](message, {
+          search: args.join(" "),
+        });
+        message.channel.send("playing : " + song.url);
         break;
-      case pause:
-        song = bot.player.pause(message);
+      case "toggle":
+        song = player.toggleLoop(message);
         break;
-      case resume:
-        song = bot.player.resume(message);
+      case "remove":
+        song = player.remove(message, parseInt(args[0]) - 1);
         break;
-      case stop:
-        song = bot.player.stop(message);
-        break;
-      case toggle:
-        song = bot.player.toggleLoop(message);
-        if (toggle === null) return;
+      case "seek":
+        song = await player.seek(message, parseInt(args[0]) * 1000);
         break;
       default:
+        song = player[command](message);
     }
-  } catch (error) {
-    console.error(error);
+  } catch (e) {
+    console.error;
   }
-};
+}
+module.exports = { play, musicInfos };

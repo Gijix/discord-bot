@@ -11,7 +11,7 @@ const path = mapFolder(__dirname,{
 /**
  * @typedef command
  * @property {commandCallback} fn
- *@property {string} name
+ * @property {string} name
  */
 /**
  * @type {command[]}

@@ -9,7 +9,7 @@ function fn(msg, bot) {
     .array()
     .filter((chan) => chan.type === "voice")
     .forEach((chan) => {
-      if (chan.members.find((member) => member.id === bot.user.id)) {
+      if (chan.members.find(({ id }) => id === bot.user.id)) {
         /**
          * @type {VoiceChannel}
          */
@@ -22,4 +22,9 @@ function fn(msg, bot) {
 }
 
 const name = "leave";
-module.exports = { fn, name };
+/**
+ * @type {Permissions}
+ */
+const permList = ["ADMINISTRATOR"];
+const description = "Make the bot leave the current voice channel";
+module.exports = { fn, name, permList, description };

@@ -1,4 +1,4 @@
-const { Message } = require("discord.js");
+const { Message, Permissions } = require("discord.js");
 /**
  * @param {Message} msg
  */
@@ -10,16 +10,20 @@ function fn(msg) {
       msg.channel.messages
         .fetch()
         .then((messages) =>
-          msg.channel.bulkDelete(
-            messages
-              .filter((mess) => mess.author.id === id)
-          ).then()
+          msg.channel
+            .bulkDelete(messages.filter((mess) => mess.author.id === id))
+            .then()
         );
     }
   } else {
     const num = parseInt(arr[1]);
-    msg.channel.bulkDelete(num + 1).catch((err) => console.error(err))
+    msg.channel.bulkDelete(num + 1).catch((err) => console.error(err));
   }
 }
 const name = "delete";
-module.exports = { fn, name };
+/**
+ * @type {Permissions}
+ */
+const permList = ["MANAGE_MESSAGES"];
+const description = "Delete a number of message or all of specific user";
+module.exports = { fn, name, permList, description };

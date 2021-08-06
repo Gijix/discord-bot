@@ -1,8 +1,8 @@
-const {Message,Client} = require('discord.js')
-const mapFolder = require('map-folder')
-const path = mapFolder(__dirname,{
-    exclude : ['index.js']
-})
+const { Message, Client, Permissions } = require("discord.js"),
+  mapFolder = require("map-folder"),
+  path = mapFolder(__dirname, {
+    exclude: ["index.js"],
+  });
 /**
  * @callback commandCallback
  * @param {Message} message
@@ -11,14 +11,16 @@ const path = mapFolder(__dirname,{
 /**
  * @typedef command
  * @property {commandCallback} fn
- *@property {string} name
+ * @property {string} name
+ * @property {string} description
+ * @property {Permissions} permList
  */
 /**
  * @type {command[]}
  */
-const result = []
+const result = [];
 
-Object.entries(path.entries).forEach( (obj) => {
-    result.push(require(obj[1].path))
-})
-module.exports = result
+Object.entries(path.entries).forEach((obj) => {
+  result.push(require(obj[1].path));
+});
+module.exports = result;

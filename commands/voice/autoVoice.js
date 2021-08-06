@@ -1,6 +1,6 @@
 const { VoiceState } = require("discord.js");
 let temporary = [];
-const channelID = '870994373159039017'
+const channelID = "870994373159039017";
 /**
  * @param {VoiceState} oldState
  * @param {VoiceState} newState
@@ -8,6 +8,7 @@ const channelID = '870994373159039017'
 function fn(oldState, newState) {
   if (newState.channelID) {
     if (newState.channel.id === channelID) {
+      const CreateChannel = newState.guild.channels.cache.get(channelID);
       newState.guild.channels
         .create(
           `salon de ${
@@ -18,14 +19,23 @@ function fn(oldState, newState) {
             parent: newState.guild.channels.cache.find(
               (chan) => chan.name === "Salons vocaux"
             ),
+            position: CreateChannel.position + 1,
+            permissionOverwrites: [
+              {
+                id: newState.id,
+                allow: [
+                  "DEAFEN_MEMBERS",
+                  "MUTE_MEMBERS",
+                  "MANAGE_CHANNELS",
+                  "MOVE_MEMBERS",
+                ],
+              },
+            ],
           }
         )
         .then((chan) => {
           newState.member.voice.setChannel(chan).catch((e) => console.error(e));
           temporary.push(chan.id);
-          chan.updateOverwrite(newState.member, {
-            MANAGE_CHANNELS: true,
-          });
         });
     }
   } else {

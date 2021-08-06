@@ -1,24 +1,22 @@
-const { Player } = require("discord-music-player");
-const {
-  Client,
-  Message,
-  PermissionResolvable,
-  VoiceState,
-  TextChannel,
-  MessageEmbed,
-  ColorResolvable,
-  EmbedFieldData,
-  GuildMember,
-  Role,
-  GuildChannel,
-} = require("discord.js");
+const { Player } = require("discord-music-player"),
+  {
+    Client,
+    Message,
+    Permissions,
+    VoiceState,
+    TextChannel,
+    MessageEmbed,
+    ColorResolvable,
+    EmbedFieldData,
+    GuildMember,
+  } = require("discord.js");
 class myClient extends Client {
   player = new Player(this, {
     leaveOnEnd: false,
     leaveOnStop: false,
     leaveOnEmpty: true,
     timeout: 0,
-    volume: 150,
+    volume: 200,
     quality: "high",
   });
   configChannelId = null;
@@ -34,17 +32,26 @@ class myClient extends Client {
     );
   }
   /**
-   * 
-   * @param {VoiceState} oldstate 
+   *
+   * @param {VoiceState | Message } arg
    * @returns  {TextChannel}
    */
-  logChannelVoice(oldstate){
-    return oldstate.guild.channels.cache.find(chan => chan.id === '872055513871958046')
+  logChannelVoice(arg) {
+    return arg.guild.channels.cache.find(
+      (chan) => chan.id === "872055513871958046"
+    );
+  }
+  /**
+   * @param {GuildMember} member
+   * @return {TextChannel}
+   */
+  logChannelUserState(member) {
+    return member.guild.channels.cache.get("872907085002702859");
   }
   /**
    * Check if the user who wrote the command has the perm for perfoming it
    * @param {Message} msg
-   * @param {PermissionResolvable} permList
+   * @param {Permissions} permList
    * @return {boolean}
    */
   checkPerm(msg, permList) {
@@ -104,8 +111,10 @@ class myClient extends Client {
    * @param {Message} message
    */
   logMsg(message, prefix) {
-    if (message.channel.id === (this.logChannelMsg(message).id || this.logChannelVoice(message.id)) || (message.author.bot))
-      return;
+    if (message.channel.id === this.logChannelMsg(message).id) return;
+    if (message.channel.id === this.logChannelVoice(message).id) return;
+    if (message.channel.id === this.logChannelUserState(message).id) return;
+    if (message.author.bot) return;
     const command = message.content.startsWith(prefix);
     const color = command ? "YELLOW" : "GREEN";
     const title = command ? "Try Command" : "Send Message";
@@ -124,7 +133,6 @@ class myClient extends Client {
    * @param {Message} message
    */
   async logDeleteMsg(message) {
-    console.log("deleting and logging");
     try {
       const fetchedLog = await message.guild.fetchAuditLogs({
         type: "MESSAGE_DELETE",
@@ -170,8 +178,18 @@ class myClient extends Client {
    *
    * @param {GuildMember} member
    */
-  logGuildState(member) {
-
+  logUserState(member) {
+    const message = member.guild.member(member)
+      ? "User join guild"
+      : "User leave guild";
+    const embed = this.createEmbed(
+      "GREEN",
+      message,
+      member.id,
+      { name: "User", value: `<@${member.id}>`, inline: true },
+      { name: "As", value: member.user.username, inline: true }
+    );
+    this.logChannelUserState().send(embed);
   }
   /**
    *
@@ -180,7 +198,6 @@ class myClient extends Client {
    * @return {MessageEmbed}
    */
   logVoiceUpdate(oldstate, newState) {
-    
     let embed;
     if (oldstate.channelID) {
       if (newState.channelID) {
@@ -210,7 +227,7 @@ class myClient extends Client {
         { name: "Channel", value: newState.channel.name, inline: true }
       );
     }
-    this.logChannelVoice(oldstate).send(embed)
+    this.logChannelVoice(oldstate).send(embed);
   }
   /**
    *
