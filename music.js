@@ -1,6 +1,6 @@
 const { Message } = require("discord.js");
 const Client = require("./customClient");
-const { Song } = require("discord-music-player");
+const { RepeatMode } = require("discord-music-player");
 /**
  * @typedef info
  * @property {string} name
@@ -14,7 +14,11 @@ const musicInfos = [
     name: "play",
     description: "add a song to the server queue and init the queue",
   },
-  { name: "stop", description: "stop the current song and clear the server queue" },
+  {name:"getqueue"},
+  {
+    name: "stop",
+    description: "stop the current song and clear the server queue",
+  },
   { name: "pause", description: "pause the current song" },
   { name: "resume", description: "resume the current song" },
   { name: "skip", description: "skip the current song" },
@@ -22,7 +26,10 @@ const musicInfos = [
   { name: "remove", description: "remove a song from the queue by index" },
   { name: "shuffle", description: "shuffle the server queue" },
   { name: "seek", description: "seek for a moment in the song" },
-  { name: "playlist", description: "add playlist to the server queue and init the queue" },
+  {
+    name: "playlist",
+    description: "add playlist to the server queue and init the queue",
+  },
 ];
 /**
  *
@@ -32,35 +39,42 @@ const musicInfos = [
  */
 
 async function play(message, { player }, prefix) {
+  const isOnvoice = message.member.voice.channelId;
+  const botOnVoice = message.guild.me.voice.channelId;
+  if (!isOnvoice || (botOnVoice && isOnvoice !== botOnVoice)) return;
   const args = message.content.slice(prefix.length).trim().split(/ +/g);
   const command = args.shift().toLowerCase();
-  if (!message.member.voice.channelID) return;
-  /**
-   * @type {Song}
-   */
-  let song = null;
-  try {
-    switch (command) {
-      case "play" || "playlist":
-        song = await player[command](message, {
-          search: args.join(" "),
-        });
-        message.channel.send("playing : " + song.url);
-        break;
-      case "toggle":
-        song = player.toggleLoop(message);
-        break;
-      case "remove":
-        song = player.remove(message, parseInt(args[0]) - 1);
-        break;
-      case "seek":
-        song = await player.seek(message, parseInt(args[0]) * 1000);
-        break;
-      default:
-        song = player[command](message);
-    }
-  } catch (e) {
-    console.error;
+  let guildQueue = player.getQueue(message.guild.id);
+  console.log({command});
+  switch (command) {
+    case "play" || "playlist":
+      let queue = player.createQueue(message.guild.id);
+      await queue.join(message.member.voice.channel);
+      let song = await queue[command](args.join(" ")).catch((_) => {
+        if (!guildQueue) queue.stop();
+      });
+      break;
+    case "skip" :
+      let skippedSong = guildQueue.skip()
+    break
+    case "stop":
+      guildQueue.stop();
+    break
+    case "pause":
+      guildQueue.setPaused();
+    break
+    case "resume":
+      guildQueue.setPaused(false);
+    break
+    case "seek":
+      guildQueue.seek(parseInt(args.join(' ')) * 1000);
+    break
+    case "getqueue":
+      console.log({guildQueue})
+    break
+    default:
+      console.log("default");
+    break
   }
 }
 module.exports = { play, musicInfos };

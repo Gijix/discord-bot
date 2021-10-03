@@ -1,16 +1,27 @@
 const { Message, Permissions } = require("discord.js");
-const path = require("path")
+const Client = require('../../customClient')
+const {createAudioResource,createAudioPlayer,AudioPlayerStatus,getVoiceConnection, NoSubscriberBehavior} = require('@discordjs/voice')
+const path = require("path");
+const { join } = require("path");
 /**
  * 
  * @param {Message} message 
+ * @param {Client} bot
  * @returns 
  */
-function fn(message){
+function fn(message,bot){
         if (!message.member.voice.channel || message.guild.me.voice.channel) return 
-        message.member.voice.channel.join().then(vc => {
-            vc.play(path.join(__dirname,'../../sounds/yamete.mp3')).on("finish", () => vc.disconnect());
-        }).catch(console.error)
-    };
+        const connection = getVoiceConnection(message.guildId) || bot.join(message)
+        const {player} = connection.subscribe(createAudioPlayer({
+            behaviors:NoSubscriberBehavior.Pause
+        }))
+        const audioRessourse = createAudioResource(path.join(__dirname,"../../sounds/yamete.mp3"))
+        player.play(audioRessourse)
+        player.on(AudioPlayerStatus.Idle ,() => {
+            connection.destroy()
+        })
+        
+    }
 /**
  * @type {Permissions} 
 */

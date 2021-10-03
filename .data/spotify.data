@@ -1,0 +1,11 @@
+{
+    "client_id": "623895b5f4f7481c9bff17e0bc90a310",
+    "client_secret": "5992af24a1c248b894942511e231ef2f",
+    "redirect_url": "http://http://esclave.com/callback/",
+    "access_token": "BQAFm8Mds6Ur6UPq5gRDwz_-h88mbBbCwoXmb4cynYr0czjzuts_xI5mUpRR5tfqCZza1kpEX90BXrq04bAFtP4ePqtA_IcSTX7bIfyIhk48vynzketRmE6MfpenEJdfMfMPau_iPOjIqW8gHKvXFK3Qpz5KEf90Gg",
+    "refresh_token": "AQCjsvGTbuJj5ZerE9WeMa0QUny27ai-Vc_7GMDpqNfaph2b6guHuNDHZ8s9QmzS34nyLJr1UL2MGoLAS1lhbSdjvEdClSi6ZdEFqYBzExGMcrfSD6jpagzknO8O7K305hQ",
+    "expires_in": 3600,
+    "expiry": 1633224686420,
+    "token_type": "Bearer",
+    "market": "FR"
+}

@@ -1,4 +1,5 @@
-const { Message, VoiceChannel, Permissions } = require("discord.js");
+const { Message , Permissions } = require("discord.js");
+const {joinVoiceChannel,a} = require('@discordjs/voice')
 /**
  *
  * @param {Message} msg
@@ -6,17 +7,13 @@ const { Message, VoiceChannel, Permissions } = require("discord.js");
 function fn(msg) {
   let arg = msg.content.split(" ").slice(1).join(" ");
   const { guild } = msg;
-  /**
-   * @type {VoiceChannel}
-   */
-  const channelJoin = guild.channels.cache
-    .array()
-    .find((chan) => chan.name === arg);
-  if (channelJoin) {
-    channelJoin.join();
-  } else {
-    return console.error("channel doesn't exist");
-  }
+  const channelJoin = guild.channels.cache.find(chan => chan.name === arg)
+  channelJoin && joinVoiceChannel({
+    channelId:channelJoin.id,
+    guildId:guild.id,
+    adapterCreator:guild.voiceAdapterCreator
+  })
+  
 }
 const name = "join";
 /**

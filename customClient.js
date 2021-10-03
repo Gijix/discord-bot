@@ -1,3 +1,4 @@
+const { joinVoiceChannel } = require("@discordjs/voice");
 const { Player } = require("discord-music-player"),
   {
     Client,
@@ -16,11 +17,23 @@ class myClient extends Client {
     leaveOnStop: false,
     leaveOnEmpty: true,
     timeout: 0,
-    volume: 200,
+    volume: 50,
     quality: "high",
   });
   configChannelId = null;
   adminId = "247100615489093632";
+  /**
+   * 
+   * @param {Message} message 
+   * @returns 
+   */
+  join(message){
+    return joinVoiceChannel({
+      guildId:message.guildId,
+      channelId:message.member.voice.channelId,
+      adapterCreator:message.guild.voiceAdapterCreator
+    })
+  }
   /**
    * @param {Message} message
    * @return {TextChannel}
@@ -56,7 +69,7 @@ class myClient extends Client {
    */
   checkPerm(msg, permList) {
     return (
-      msg.member.hasPermission(permList) || msg.member.user.id === this.adminId
+      msg.member.permissions.has(permList) || msg.member.user.id === this.adminId
     );
   }
   /**

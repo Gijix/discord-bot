@@ -6,12 +6,13 @@ const {musicInfos} = require('./music')
  *
  * @param {Message} messsage
  * @param {Client} bot
+ * @param {string} prefix: ;
  */
-function fn(messsage, bot) {
+function fn(messsage, bot,prefix) {
   const helpBasic = () => {
     let str = ""
     commandsMsg.forEach(com => {
-      str = str.concat("``!"+com.name+"`` "+com.description+"\n" )
+      str = str.concat("``"+prefix+com.name+"`` "+com.description+"\n" )
     })
     return str
   };
@@ -19,7 +20,7 @@ function fn(messsage, bot) {
   const helpMusic = () => {
     let str = ""
     musicInfos.forEach(info => {
-      str = str.concat("``!"+info.name+"`` "+info.description+"\n" )
+      str = str.concat("``"+prefix+info.name+"`` "+info.description+"\n" )
     })
     return str
   };

@@ -8,13 +8,13 @@ function fn(msg) {
     if (isNaN(parseInt(arr[1]))) {
       let id = msg.mentions.members.first().id;
 
-      if (msg.guild.members.cache.array().some((x) => x.id === id)) {
+      if (msg.guild.members.cache.find(x => x.id === id)) {
         msg.channel.messages
           .fetch()
           .then((messages) =>
             msg.channel
-              .bulkDelete(messages.filter((mess) => mess.author.id === id))
-              .catch(console.error)
+              // .bulkDelete(messages.filter((mess) => mess.author.id === id))
+              // .catch(console.error)
           );
       }
     } else {
