@@ -23,6 +23,10 @@
     "dev": "nodemon bot.js",
     "start": "node bot.js"
   },
+  "engines": {
+   "node": "16.x",
+   "npm": "7.x"
+}
   "keywords": [
     "discord.js"
   ],
