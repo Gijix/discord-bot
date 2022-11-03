@@ -14,9 +14,8 @@ interface command {
   fn: commandCallback
   name: string
   description: string
-  permList: PermissionsString
+  permList: PermissionsString[]
 }
-
 
 const result: command[] = [];
 

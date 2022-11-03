@@ -59,7 +59,7 @@ class myClient extends Client {
   /**
    * Check if the user who wrote the command has the perm for perfoming it
    */
-  checkPerm(msg: Message, permList: PermissionsString): boolean {
+  checkPerm(msg: Message, permList: PermissionsString[]): boolean {
     return (
       msg.member!.permissions.has(permList) || msg.member!.user.id === this.ADMIN_ID
     );
@@ -69,11 +69,6 @@ class myClient extends Client {
    *  get date information
    */
   get eventTime() {
-    /**
-     *
-     * @param {number} arg
-     * @returns  {number | string}
-     */
     const checkNum = (arg: number): number | string => {
       if (arg < 10) {
         return "0" + arg;
