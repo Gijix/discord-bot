@@ -95,12 +95,12 @@ class myClient extends Client {
   /**
    *  create embed message
    */
-  createEmbed(color: ColorResolvable, title: any, author: any, ...fields: EmbedField[]): EmbedBuilder {
+  createEmbed(color: ColorResolvable, title: string, author: string, ...fields: EmbedField[]): EmbedBuilder {
     const time = this.eventTime;
     const embed = new EmbedBuilder()
       .setColor(color)
       .setTitle(title)
-      .setAuthor(author)
+      .setAuthor({ name: author })
       .addFields(...fields)
       .setTimestamp()
       .setFooter({ text: `${time.hours} H ${time.minutes}  -  ${time.day}/${time.month}/${time.year}`});
@@ -111,9 +111,12 @@ class myClient extends Client {
    * Display all "send message" event on selected channel
    */
   async logMsg(message: Message, prefix: string) {
-    if (message.channel.id === this.logChannelMsg(message).id) return;
-    if (message.channel.id === this.logChannelVoice(message).id) return;
-    if (message.channel.id === this.logChannelUserState(message.member!).id) return;
+    if ([
+      this.logChannelMsg(message).id, 
+      this.logChannelVoice(message).id, 
+      this.logChannelUserState(message.member!).id
+    ].includes(message.channel.id)) return;
+  
     if (message.author.bot) return;
 
     const command = message.content.startsWith(prefix);

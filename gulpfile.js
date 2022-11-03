@@ -2,10 +2,10 @@ import gulp from "gulp";
 import esbuild from "gulp-esbuild";
 import cp from "child_process";
 import chalk from "chalk";
-import del from "del";
+import { deleteAsync } from "del";
 
 function _cleanDist() {
-  return del(["dist/**/*"]);
+  return deleteAsync(["dist/**/*"]);
 }
 
 function _build() {

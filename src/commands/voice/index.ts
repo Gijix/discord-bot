@@ -1,5 +1,9 @@
 import { VoiceState } from 'discord.js'
 import mapFolder from 'map-folder'
+import { dirname } from "path"
+import { fileURLToPath } from "url"
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
 
 const path = mapFolder(__dirname, {
   exclude: ["index.js"],

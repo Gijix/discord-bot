@@ -1,7 +1,7 @@
 import { Message, PermissionsString } from "discord.js";
-import Client from "./customClient";
-import commandsMsg from "./commands/message/index";
-import { musicInfos } from './music';
+import Client from "./customClient.js";
+import commandsMsg from "./commands/message/index.js";
+import { musicInfos } from './music.js';
 
 function fn (messsage: Message, bot: Client, prefix: string) {
   const helpBasic = () => {
@@ -36,7 +36,7 @@ function fn (messsage: Message, bot: Client, prefix: string) {
     }
   );
 
-  messsage.channel.send({ embeds: [embed.data]});
+  messsage.channel.send({ embeds: [embed]});
 }
 
 const name = "help";

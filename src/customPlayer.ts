@@ -1,4 +1,4 @@
-import play, { YouTube } from "play-dl";
+import play, { YouTube, YouTubeVideo, YouTubeChannel } from "play-dl";
 import { SoundCloud, Spotify } from "play-dl";
 import { Message } from "discord.js";
 import Client from "./customClient";
@@ -11,12 +11,12 @@ interface media {
 
 class customPlayer {
   player = createAudioPlayer();
-
   queue: media[] = [];
 
   checkPresence(message: Message) {
     return message.member!.voice.channelId !== message.guild!.me.voice.channelID;
   }
+
   playNext() {
     console.log("gonna start the queue");
     this.player.play(this.queue.shift()!.audioRessource);
@@ -24,25 +24,32 @@ class customPlayer {
     return this.player;
   }
 
-  async getAudioRessource(streamInfo: media) {
+  async getAudioRessource(streamInfo: YouTube) {
     console.log("gonna get audio ressource");
-    const playMedia = (
-      await play.search(streamInfo.name || streamInfo.title)
-    ).shift();
-    const { stream, type } = await play.stream(playMedia.url);
+    let query = ""
+    if (streamInfo instanceof YouTubeChannel) {
+      query = streamInfo.name!
+    } else {
+      query = streamInfo.title!
+    }
+
+    const playMedia = (await play.search(query)).shift()
+
+    const { stream, type } = await play.stream(playMedia!.url);
     const audioRessource = createAudioResource(stream, { inputType: type });
     console.log(streamInfo.type);
     return { audioRessource, streamInfo };
   }
-  /**
-   *
-   * @param {string} baseUrl
-   * @returns {Promise<play.YouTube | play.Spotify | play.SoundCloud>}
-   */
-  async getMedia(baseUrl) {
+
+  async getMedia(baseUrl: string): Promise<YouTube[] | Spotify[] | SoundCloud | void> {
     console.log("getting media");
     const validation = await play.validate(baseUrl);
     console.log(validation);
+    if (!validation) {
+      console.log("error returning " + validation);
+      return
+    }
+
     if (validation.startsWith("yt")) {
       return await play.search(baseUrl);
     } else if (validation.startsWith("so")) {
@@ -51,18 +58,12 @@ class customPlayer {
       console.log("gonna return spotify track");
       return await play.search(baseUrl,{source:{spotify:"track"}});
     }
-    console.log("error returning " + validation);
   }
-  /**
-   *
-   * @param {Message} message
-   * @param {string} prefix
-   * @param {Client} bot
-   */
-  async play(message, prefix, bot) {
+
+  async play(message: Message, prefix: string, bot: Client) {
     if (
-      message.guild.me.voice.channelId !== message.member.voice.channelId &&
-      message.guild.me.voice.channelId
+      message.guild!.me.voice.channelId !== message.member!.voice.channelId &&
+      message.guild!.me.voice.channelId
     )
       return;
     const args = message.content
@@ -71,15 +72,15 @@ class customPlayer {
       .split(/ +/g)
       .slice(1)
       .join(" ");
-    const connection = getVoiceConnection(message.guildId) || bot.join(message);
-    const streamInfo = await this.getMedia(args);
+    const connection = getVoiceConnection(message.guildId!) || bot.join(message);
+    const streamInfo = (await this.getMedia(args))!;
     console.log(" gonna add to queue" , streamInfo);
-    if (streamInfo.tracks) {
+    if ('tracks' in streamInfo) {
       console.log("valide tracklist");
       this.queue.push(
-        ...streamInfo.tracks.map(
-          async (track) => (track = await this.getAudioRessource(track))
-        )
+        ...(await Promise.all(streamInfo.tracks.map(
+          async (track) => await this.getAudioRessource(track)
+        )))
       );
     } else if (streamInfo.type === "playlist" || streamInfo.type === "album") {
       console.log("valide playlist");
@@ -129,7 +130,7 @@ class customPlayer {
   }
 }
 const music = new customPlayer();
-music.player.on("idle", () => {
+music.player.on('idle', () => {
   if (this.queue.length > 0) {
     this.playNext();
   }

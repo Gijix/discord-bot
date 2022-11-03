@@ -1,13 +1,13 @@
 import 'dotenv/config'
 import { GatewayIntentBits, ActivityType } from 'discord.js'
-const { Guilds, GuildMessages, GuildVoiceStates } = GatewayIntentBits
-import Client from "./customClient";
-const bot = new Client({ intents: [Guilds, GuildMessages, GuildVoiceStates] });
+const { Guilds, GuildMessages, GuildVoiceStates, MessageContent } = GatewayIntentBits
+import Client from "./customClient.js";
+const bot = new Client({ intents: [Guilds, GuildMessages, GuildVoiceStates, MessageContent]});
 
-import commandsMsg from "./commands/message/index";
-import commandVoice from "./commands/voice/index";
-import help from "./help";
-import { play, musicInfos } from './music';
+import commandsMsg from "./commands/message/index.js";
+import commandVoice from "./commands/voice/index.js";
+import help from "./help.js";
+import { play, musicInfos } from './music.js';
 
 const prefix = "$";
 
@@ -30,6 +30,7 @@ bot.on("messageCreate", async (message) => {
   if (command === prefix + help.name) {
     help.fn(message, bot, prefix);
   }
+
   musicInfos.forEach((com) => {
     if (command === prefix + com.name) {
       play(message, bot, prefix);

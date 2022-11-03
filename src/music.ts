@@ -1,5 +1,5 @@
 import { Message } from "discord.js";
-import Client from "./customClient";
+import Client from "./customClient.js";
 import { getVoiceConnection } from '@discordjs/voice'
 
 interface info {
