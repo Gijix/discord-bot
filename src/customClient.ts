@@ -96,6 +96,7 @@ class myClient extends Client {
    *  create embed message
    */
   createEmbed(color: ColorResolvable, title: string, author: string, ...fields: EmbedField[]): EmbedBuilder {
+    fields = fields.filter((field) => field.value && field.name)
     const time = this.eventTime;
     const embed = new EmbedBuilder()
       .setColor(color)

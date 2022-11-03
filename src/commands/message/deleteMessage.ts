@@ -1,14 +1,14 @@
-const { Message, Permissions } = require("discord.js");
-/**
- * @param {Message} msg
- */
-function fn(msg) {
+import { Message, PermissionsString, ChannelType } from "discord.js";
+
+export function fn(msg: Message) {
   let arr = msg.content.split(" ");
+  if (msg.channel.type === ChannelType.DM) return;
+
   try {
     if (isNaN(parseInt(arr[1]))) {
-      let id = msg.mentions.members.first().id;
+      let id = msg.mentions.members!.first()!.id;
 
-      if (msg.guild.members.cache.find(x => x.id === id)) {
+      if (msg.guild!.members.cache.find(x => x.id === id)) {
         msg.channel.messages
           .fetch()
           .then((messages) =>
@@ -25,10 +25,7 @@ function fn(msg) {
     console.error;
   }
 }
-const name = "delete";
-/**
- * @type {Permissions}
- */
-const permList = ["MANAGE_MESSAGES"];
-const description = "Delete a number of message or all of specific user";
-module.exports = { fn, name, permList, description };
+
+export const name = "delete";
+export const permList: PermissionsString[] = ["ManageMessages"];
+export const description = "Delete a number of message or all of specific user";

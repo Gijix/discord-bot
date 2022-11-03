@@ -1,11 +1,8 @@
 import { Message, Client, PermissionsString } from "discord.js"
 import mapFolder from 'map-folder'
-import { dirname } from "path"
-import { fileURLToPath } from "url"
+import { dirname } from '../../utils.js'
 
-const __dirname = dirname(fileURLToPath(import.meta.url))
-
-const path = mapFolder(__dirname, {
+const path = mapFolder(dirname(import.meta), {
   exclude: ["index.js"],
 })
 

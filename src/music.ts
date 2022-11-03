@@ -41,8 +41,6 @@ export async function play(message: Message, client: Client, prefix: string) {
   const command = args.shift()!.toLowerCase();
   let guildQueue = player.getQueue(message.guild!.id)!;
 
-  console.log({command});
-
   switch (command) {
     case "play" || "playlist":
       let queue = player.createQueue(message.guild!.id);
