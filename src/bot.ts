@@ -1,17 +1,16 @@
 import 'dotenv/config'
-import { GatewayIntentBits, ActivityType } from 'discord.js'
-const { Guilds, GuildMessages, GuildVoiceStates, MessageContent } = GatewayIntentBits
+import { GatewayIntentBits, ActivityType, Events } from 'discord.js'
 import Client from "./customClient.js";
+
+const { Guilds, GuildMessages, GuildVoiceStates, MessageContent } = GatewayIntentBits
 const bot = new Client({ intents: [Guilds, GuildMessages, GuildVoiceStates, MessageContent]});
 
-import commandsMsg from "./commands/message/index.js";
 import commandVoice from "./commands/voice/index.js";
-import help from "./help.js";
 import { play, musicInfos } from './music.js';
 
-const prefix = "$";
+const prefix = process.env.PREFIX!;
 
-bot.on("ready", () => {
+bot.on(Events.ClientReady, async () => {
   console.info("Orlando bot has started");
   bot.user!.setStatus('idle');
   bot.user!.setPresence({
@@ -21,30 +20,27 @@ bot.on("ready", () => {
       type:ActivityType.Watching,
     }],
   });
+  await bot.commandHandler.loadCommands()
 });
 
-bot.on("messageCreate", async (message) => {
+bot.on(Events.InteractionCreate, (interaction) => {
+  if (interaction.isChatInputCommand()) {
+      bot.commandHandler.runSlash(interaction, bot)
+  }
+})
+
+bot.on(Events.MessageCreate, async (message) => {
   if (message.author.bot) return;
   // bot.logMsg(message, prefix);
   const command = message.content.split(" ")[0]
-  if (command === prefix + help.name) {
-    help.fn(message, bot, prefix);
-  }
 
   musicInfos.forEach((com) => {
     if (command === prefix + com.name) {
       play(message, bot, prefix);
     }
   });
-  
-  commandsMsg.forEach((com) => {
-    if (
-      command === prefix + com.name &&
-      bot.checkPerm(message, com.permList)
-    ) {
-      com.fn(message, bot);
-    }
-  });
+
+  bot.commandHandler.runMessage(message, bot)
 });
 
 bot.on("messageDelete", async (messageDelete) => {

@@ -1,14 +1,15 @@
-import { Message, Client, PermissionsString } from "discord.js";
+import { Command } from "../../commandHandler.js";
 
-export function fn(msg: Message, bot: Client) {
-  msg.reply("i will restart in 5 seconds").then(() =>
+export default new Command({
+  name: "reset",
+  description: "restart the bot",
+  permissions: ["Administrator"],
+  handler (message, bot) {
+    message.reply("i will restart in 5 seconds").then(() =>
     setTimeout(() => {
       bot.destroy() 
       bot.login(process.env.BOT_TOKEN)
     }, 5000)
   );
-}
-
-export const name = "reset";
-export const permList: PermissionsString[] = ["Administrator"];
-export const description = "restart the bot";
+  }
+})

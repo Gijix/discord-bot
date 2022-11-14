@@ -1,31 +1,33 @@
-import { Message, PermissionsString, ChannelType } from "discord.js";
+import { ChannelType } from "discord.js";
+import { Command } from "../../commandHandler.js";
 
-export function fn(msg: Message) {
-  let arr = msg.content.split(" ");
-  if (msg.channel.type === ChannelType.DM) return;
-
-  try {
-    if (isNaN(parseInt(arr[1]))) {
-      let id = msg.mentions.members!.first()!.id;
-
-      if (msg.guild!.members.cache.find(x => x.id === id)) {
-        msg.channel.messages
-          .fetch()
-          .then((messages) =>
-            msg.channel
-              // .bulkDelete(messages.filter((mess) => mess.author.id === id))
-              // .catch(console.error)
-          );
+export default new Command({
+  name: 'delete',
+  description: 'Delete a number of message or all of specific user',
+  permissions: ["ManageMessages"],
+  handler (message) {
+    let arr = message.content.split(" ");
+    if (message.channel.type === ChannelType.DM) return;
+  
+    try {
+      if (isNaN(parseInt(arr[1]))) {
+        let id = message.mentions.members!.first()!.id;
+  
+        if (message.guild!.members.cache.find(x => x.id === id)) {
+          message.channel.messages
+            .fetch()
+            .then((messages) =>
+              message.channel
+                // .bulkDelete(messages.filter((mess) => mess.author.id === id))
+                // .catch(console.error)
+            );
+        }
+      } else {
+        const num = parseInt(arr[1]);
+        message.channel.bulkDelete(num + 1).catch((err) => console.error(err));
       }
-    } else {
-      const num = parseInt(arr[1]);
-      msg.channel.bulkDelete(num + 1).catch((err) => console.error(err));
+    } catch (e) {
+      console.error;
     }
-  } catch (e) {
-    console.error;
   }
-}
-
-export const name = "delete";
-export const permList: PermissionsString[] = ["ManageMessages"];
-export const description = "Delete a number of message or all of specific user";
+})

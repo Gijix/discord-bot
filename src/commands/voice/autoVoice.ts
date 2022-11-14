@@ -3,6 +3,7 @@ import { VoiceState, ChannelType, CategoryChannel, VoiceChannel } from "discord.
 let temporary: string[] = [];
 
 const channelID = "870994373159039017";
+const categoryID = ""
 
 export function fn(oldState: VoiceState, newState: VoiceState) {
   if (newState.channelId) {
@@ -14,9 +15,7 @@ export function fn(oldState: VoiceState, newState: VoiceState) {
             newState.member!.nickname ?? newState.member!.user.username
           }`,
           type: ChannelType.GuildVoice,
-          parent: newState.guild.channels.cache.find(
-            (chan) => chan.name === "Salons vocaux"
-          ) as CategoryChannel,
+          parent: newState.guild.channels.cache.get(categoryID) as CategoryChannel,
           position: createChannel.position + 1,
           permissionOverwrites: [
             {
@@ -35,10 +34,9 @@ export function fn(oldState: VoiceState, newState: VoiceState) {
           temporary.push(chan.id);
         });
     }
-  } else {
-    if (
-      temporary.includes(oldState.channelId!) &&
-      oldState.channel!.members.size === 0
+  } else if ( 
+    temporary.includes(oldState.channelId!) &&
+    oldState.channel!.members.size === 0
     ) {
       oldState.channel!
         .delete()
@@ -46,7 +44,6 @@ export function fn(oldState: VoiceState, newState: VoiceState) {
           () => (temporary = temporary.filter((x) => x === oldState.channelId))
         )
         .catch((e) => console.error(e));
-    }
   }
 }
 

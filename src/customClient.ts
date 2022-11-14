@@ -1,5 +1,6 @@
 import { joinVoiceChannel } from "@discordjs/voice";
 import { Player } from "discord-music-player";
+import { Command } from "./commandHandler.js";
 import {
     Client,
     Message,
@@ -11,13 +12,15 @@ import {
     EmbedField,
     GuildMember,
     ClientOptions,
-    AuditLogEvent
+    AuditLogEvent,
   } from "discord.js";
 
 class myClient extends Client {
   constructor (arg: ClientOptions) {
     super(arg)
   }
+
+  commandHandler = Command
 
   player = new Player(this, {
     leaveOnEnd: false,
@@ -59,9 +62,9 @@ class myClient extends Client {
   /**
    * Check if the user who wrote the command has the perm for perfoming it
    */
-  checkPerm(msg: Message, permList: PermissionsString[]): boolean {
+  checkPerm(member: GuildMember, permList: PermissionsString[]): boolean {
     return (
-      msg.member!.permissions.has(permList) || msg.member!.user.id === this.ADMIN_ID
+      member.permissions.has(permList) || member.user.id === this.ADMIN_ID
     );
   }
 

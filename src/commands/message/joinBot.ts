@@ -1,18 +1,19 @@
-import { Message, PermissionsString } from "discord.js";
 import { joinVoiceChannel } from '@discordjs/voice';
+import { Command } from "../../commandHandler.js";
 
-export function fn(msg: Message) {
-  let arg = msg.content.split(" ").slice(1).join(" ");
-  const guild  = msg.guild!;
-  const channelJoin = guild.channels.cache.find(chan => chan.name === arg)
-  channelJoin && joinVoiceChannel({
-    channelId:channelJoin.id,
-    guildId:guild.id,
-    adapterCreator:guild.voiceAdapterCreator
-  })
-  
-}
 
-export const name = "join";
-export const permList: PermissionsString[] = ["Administrator"];
-export const description = "Make the bot join current voice channel";
+export default new Command({
+  name: "join",
+  description: "Make the bot join current voice channel",
+  permissions: ["Administrator"],
+  async handler (message) {
+    let arg = message.content.split(" ").slice(1).join(" ");
+    const guild = message.guild!;
+    const channelJoin = guild.channels.cache.find(chan => chan.name === arg)
+    channelJoin && joinVoiceChannel({
+      channelId:channelJoin.id,
+      guildId:guild.id,
+      adapterCreator:guild.voiceAdapterCreator
+    })
+  }
+})
