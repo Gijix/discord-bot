@@ -1,5 +1,5 @@
 import { joinVoiceChannel } from '@discordjs/voice';
-import { Command } from "../../commandHandler.js";
+import { Command } from "../commandHandler.js";
 
 
 export default new Command({

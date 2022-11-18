@@ -1,5 +1,5 @@
 import { getVoiceConnection } from '@discordjs/voice';
-import { Command } from "../../commandHandler.js";
+import { Command } from "../commandHandler.js";
 
 export default new Command({
   name: "leave",

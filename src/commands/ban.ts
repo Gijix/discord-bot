@@ -1,4 +1,4 @@
-import { Command } from "../../commandHandler.js";
+import { Command } from "../commandHandler.js";
 
 export default new Command({
   name : "ban",
@@ -10,7 +10,7 @@ export default new Command({
 
     if (message.mentions.members!.size === 1) {
       message.mentions.members!.first()!.ban({
-        reason: reason,
+        reason
       });
     }
   }

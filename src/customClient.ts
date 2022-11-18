@@ -1,6 +1,6 @@
 import { joinVoiceChannel } from "@discordjs/voice";
 import { Player } from "discord-music-player";
-import { Command } from "./commandHandler.js";
+import { CommandHandler } from "./commandHandler.js";
 import {
     Client,
     Message,
@@ -13,14 +13,31 @@ import {
     GuildMember,
     ClientOptions,
     AuditLogEvent,
+    REST,
+    Routes,
   } from "discord.js";
+import { ContextMenuHandler } from "./contextMenuHandler.js";
 
 class myClient extends Client {
   constructor (arg: ClientOptions) {
     super(arg)
   }
 
-  commandHandler = Command
+  commandHandler = new CommandHandler('dist', 'commands')
+  contextMenuHandler = new ContextMenuHandler('dist', 'contextMenuCommands')
+
+  async deployApplicationCommand () {
+    const rest = new REST({ version: '10' }).setToken(process.env.BOT_TOKEN!);
+    const commandsSlash = this.commandHandler.slashs.map((command) => command.data?.toJSON())
+    const contextMenuCommands = this.contextMenuHandler.cache.map((command) => command.builder.toJSON())
+    try {
+      const data = await rest.put(
+        Routes.applicationCommands(process.env.CLIENT_ID!),
+        { body: [...commandsSlash, ...contextMenuCommands]  },
+      ) as any[]
+      console.log(`Successfully reloaded ${data.length} application (/) commands.`);         
+    } catch(error){console.error(error)}
+  }
 
   player = new Player(this, {
     leaveOnEnd: false,
@@ -34,6 +51,8 @@ class myClient extends Client {
   CONFIG_CHANNEL_ID = null
   LOG_CHANNEL_ID = "871760169770582066"
   ADMIN_ID = "247100615489093632";
+
+  prefix = process.env.PREFIX!
 
   join (message: Message) {
     return joinVoiceChannel({
@@ -96,13 +115,15 @@ class myClient extends Client {
   createEmbed(color: ColorResolvable, title: string, author: string, ...fields: EmbedField[]): EmbedBuilder {
     fields = fields.filter((field) => field.value && field.name)
     const time = this.eventTime;
-    const embed = new EmbedBuilder()
+    const embed = new EmbedBuilder({
+      title,
+      author: {
+        name: author,
+      },
+      fields: [...fields],
+      footer: { text: `${time.hours} H ${time.minutes}  -  ${time.day}/${time.month}/${time.year}`} 
+    })
       .setColor(color)
-      .setTitle(title)
-      .setAuthor({ name: author })
-      .addFields(...fields)
-      .setTimestamp()
-      .setFooter({ text: `${time.hours} H ${time.minutes}  -  ${time.day}/${time.month}/${time.year}`});
     return embed;
   }
 

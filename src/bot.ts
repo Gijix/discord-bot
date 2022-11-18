@@ -5,7 +5,6 @@ import Client from "./customClient.js";
 const { Guilds, GuildMessages, GuildVoiceStates, MessageContent } = GatewayIntentBits
 const bot = new Client({ intents: [Guilds, GuildMessages, GuildVoiceStates, MessageContent]});
 
-import commandVoice from "./commands/voice/index.js";
 import { play, musicInfos } from './music.js';
 
 const prefix = process.env.PREFIX!;
@@ -20,25 +19,24 @@ bot.on(Events.ClientReady, async () => {
       type:ActivityType.Watching,
     }],
   });
-  await bot.commandHandler.loadCommands()
+  await bot.commandHandler.load()
+  await bot.contextMenuHandler.load()
+  await bot.deployApplicationCommand()
 });
 
 bot.on(Events.InteractionCreate, (interaction) => {
   if (interaction.isChatInputCommand()) {
-      bot.commandHandler.runSlash(interaction, bot)
+      bot.commandHandler.slashs.get(interaction.commandName)?.handler(interaction, bot)
+  }
+
+  if (interaction.isUserContextMenuCommand()) {
+    bot.contextMenuHandler.runUserContextMenuInteraction(interaction)
   }
 })
 
 bot.on(Events.MessageCreate, async (message) => {
   if (message.author.bot) return;
   // bot.logMsg(message, prefix);
-  const command = message.content.split(" ")[0]
-
-  musicInfos.forEach((com) => {
-    if (command === prefix + com.name) {
-      play(message, bot, prefix);
-    }
-  });
 
   bot.commandHandler.runMessage(message, bot)
 });
@@ -62,9 +60,6 @@ bot.on("guildMemberRemove",(member) => {
 
 bot.on("voiceStateUpdate", async (oldstate, newstate) => {
   // bot.logVoiceUpdate(oldstate, newstate);
-  commandVoice.forEach((command) => {
-    command.fn(oldstate, newstate);
-  });
 });
 
 bot.player.on('error',(err: any)=> console.error(err))

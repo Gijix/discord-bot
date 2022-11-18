@@ -1,5 +1,5 @@
 import { ChannelType } from "discord.js";
-import { Command } from "../../commandHandler.js";
+import { Command } from "../commandHandler.js";
 
 export default new Command({
   name: 'delete',

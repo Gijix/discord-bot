@@ -1,6 +1,6 @@
 import { createAudioResource, createAudioPlayer, AudioPlayerStatus, getVoiceConnection, NoSubscriberBehavior } from '@discordjs/voice';
 import path from "path";
-import { Command } from "../../commandHandler.js";
+import { Command } from "../commandHandler.js";
 
 export default new Command({
   name: "yamete",
