@@ -17,6 +17,7 @@ import {
     Routes,
   } from "discord.js";
 import { ContextMenuHandler } from "./contextMenuHandler.js";
+import { ModalHandler } from "./modalHandler.js";
 
 class myClient extends Client {
   constructor (arg: ClientOptions) {
@@ -25,18 +26,23 @@ class myClient extends Client {
 
   commandHandler = new CommandHandler('dist', 'commands')
   contextMenuHandler = new ContextMenuHandler('dist', 'contextMenuCommands')
+  modalHandler = new ModalHandler('dist', 'modals')
 
   async deployApplicationCommand () {
     const rest = new REST({ version: '10' }).setToken(process.env.BOT_TOKEN!);
     const commandsSlash = this.commandHandler.slashs.map((command) => command.data?.toJSON())
     const contextMenuCommands = this.contextMenuHandler.cache.map((command) => command.builder.toJSON())
     try {
+      console.log('tryin to deploy')
       const data = await rest.put(
         Routes.applicationCommands(process.env.CLIENT_ID!),
         { body: [...commandsSlash, ...contextMenuCommands]  },
       ) as any[]
       console.log(`Successfully reloaded ${data.length} application (/) commands.`);         
-    } catch(error){console.error(error)}
+    } catch(error){
+      console.log('failed deploy')
+      console.error(error)
+    }
   }
 
   player = new Player(this, {

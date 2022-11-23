@@ -3,7 +3,7 @@ import path from "path";
 import { readdir } from "fs/promises";
 import { BaseComponent } from "./baseComponent.js";
 
-export class Handler<S> {
+export class Handler<S extends BaseComponent> {
   path: string
   cache = new Collection<string, S>()
 
@@ -27,7 +27,7 @@ export class Handler<S> {
         throw new Error('Collection member already exist')
       }
 
-      preCache.set(baseComponent.name, file.default)
+      preCache.set(baseComponent.id || baseComponent.name, file.default)
     }
 
     this.cache = preCache

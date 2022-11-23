@@ -19,9 +19,7 @@ bot.on(Events.ClientReady, async () => {
       type:ActivityType.Watching,
     }],
   });
-  await bot.commandHandler.load()
-  await bot.contextMenuHandler.load()
-  await bot.deployApplicationCommand()
+  
 });
 
 bot.on(Events.InteractionCreate, (interaction) => {
@@ -30,7 +28,11 @@ bot.on(Events.InteractionCreate, (interaction) => {
   }
 
   if (interaction.isUserContextMenuCommand()) {
-    bot.contextMenuHandler.runUserContextMenuInteraction(interaction)
+    bot.contextMenuHandler.runUserContextMenuInteraction(interaction, bot) 
+  }
+
+  if (interaction.isModalSubmit()) {
+    bot.modalHandler.onSubmit(interaction, bot)
   }
 })
 
@@ -68,4 +70,9 @@ bot.on("error", (error) => {
   console.info("The websocket connection encountered an error:", error);
 });
 
-bot.login(process.env.BOT_TOKEN);
+await bot.commandHandler.load()
+await bot.contextMenuHandler.load()
+await bot.modalHandler.load()
+await bot.deployApplicationCommand()
+
+await bot.login(process.env.BOT_TOKEN);

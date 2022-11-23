@@ -66,14 +66,15 @@ export class CommandHandler extends Handler<Command> {
     const messageCommand = splitedMessage.shift()!;
     const messagePrefix = messageCommand[0];
     const messageCommandParsed = messageCommand.slice(1);
+    const command = this.messages.get(messageCommandParsed!)
+  
+    if (!(messagePrefix === prefix && this.isExtendedMessage(message)) || !(command?.permissions.some(perm => message.member?.permissions.has(perm)))) return 
 
-    if (messagePrefix === prefix && this.isExtendedMessage(message)) {
-      message.arguments = splitedMessage
-      message.prefix = message.prefix
-      message.command = messageCommandParsed
+    message.arguments = splitedMessage
+    message.prefix = message.prefix
+    message.command = messageCommandParsed
 
-      await this.messages.get(messageCommandParsed)?.handler(message, bot)
-    }
+    await command.handler(message, bot)
   }
 }
 

@@ -1,15 +1,15 @@
 import { 
-  ApplicationCommandType,  
   UserContextMenuCommandInteraction,
   MessageContextMenuCommandInteraction,
   ContextMenuCommandBuilder,
   ContextMenuCommandType
  } from "discord.js";
+import Client from "./customClient.js";
 import { BaseComponent } from "./baseComponent.js";
 import { Handler } from "./baseHandler.js";
 
 type CurrentInteraction<T> = T extends 2 ? UserContextMenuCommandInteraction : MessageContextMenuCommandInteraction 
-type ContextMenuHandlerType<T extends ContextMenuCommandType> = (interaction: CurrentInteraction<T>) => Promise<void> | void
+type ContextMenuHandlerType<T extends ContextMenuCommandType> = (interaction: CurrentInteraction<T>, bot: Client) => Promise<void> | void
 
 interface ContextMenuOptions<T extends ContextMenuCommandType> {
   name: string
@@ -31,7 +31,7 @@ export class ContextMenuCommand<T extends ContextMenuCommandType = ContextMenuCo
 }
 
 export class ContextMenuHandler extends Handler<ContextMenuCommand> {
-  async runUserContextMenuInteraction (interaction: UserContextMenuCommandInteraction) {
-    await this.cache.get(interaction.commandName)?.handler(interaction)
+  async runUserContextMenuInteraction (interaction: UserContextMenuCommandInteraction, bot: Client) {
+    await this.cache.get(interaction.commandName)?.handler(interaction, bot)
   }
 }

@@ -6,8 +6,8 @@ export default new Command({
   permissions: ["SendMessages"],
   isSlash: true,
   async handler (interaction, bot) {
-    const SlashList = Command.slashs.reduce((acc, com) => acc.concat("``"+com.name+"`` "+com.description+"\n" ) , '')
-    const MessageList = Command.messages.reduce((acc, com) => acc.concat("``"+bot.prefix+com.name+"`` "+com.description+"\n" ) , '')
+    const SlashList = bot.commandHandler.slashs.reduce((acc, com) => acc.concat("``"+com.name+"`` "+com.description+"\n" ) , '')
+    const MessageList = bot.commandHandler.messages.reduce((acc, com) => acc.concat("``"+bot.prefix+com.name+"`` "+com.description+"\n" ) , '')
     const embed = bot.createEmbed(
       "Purple",
       "Command List",
