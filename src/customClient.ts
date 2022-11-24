@@ -33,7 +33,6 @@ class myClient extends Client {
     const commandsSlash = this.commandHandler.slashs.map((command) => command.data?.toJSON())
     const contextMenuCommands = this.contextMenuHandler.cache.map((command) => command.builder.toJSON())
     try {
-      console.log('tryin to deploy')
       const data = await rest.put(
         Routes.applicationCommands(process.env.CLIENT_ID!),
         { body: [...commandsSlash, ...contextMenuCommands]  },

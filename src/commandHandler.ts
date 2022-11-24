@@ -3,8 +3,6 @@ import {
   ChatInputCommandInteraction,
   PermissionsString,
   SlashCommandBuilder,
-  REST,
-  Routes,
   Collection
 } from "discord.js";
 import Client from "./customClient.js";

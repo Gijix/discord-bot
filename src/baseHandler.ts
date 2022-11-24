@@ -14,6 +14,7 @@ export class Handler<S extends BaseComponent> {
   async load () {
     const filenames = await readdir(this.path);
     const preCache = new Collection<string, S>()
+
     for (const filename of filenames) {
       const filepath = this.path + '/' + filename
       const file = (await import("file://" + filepath)) as { default: any };
@@ -29,6 +30,8 @@ export class Handler<S extends BaseComponent> {
 
       preCache.set(baseComponent.id || baseComponent.name, file.default)
     }
+
+    console.log(`succesfuly loaded ${this.constructor.name}`)
 
     this.cache = preCache
   }

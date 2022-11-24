@@ -27,7 +27,7 @@ bot.on(Events.InteractionCreate, (interaction) => {
       bot.commandHandler.slashs.get(interaction.commandName)?.handler(interaction, bot)
   }
 
-  if (interaction.isUserContextMenuCommand()) {
+  if (interaction.isUserContextMenuCommand() || interaction.isMessageContextMenuCommand()) {
     bot.contextMenuHandler.runUserContextMenuInteraction(interaction, bot) 
   }
 

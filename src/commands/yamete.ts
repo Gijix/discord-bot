@@ -18,7 +18,7 @@ export default new Command({
           noSubscriber: NoSubscriberBehavior.Pause
         }
     }))!
-    const audioRessourse = createAudioResource(path.join(__dirname,"../../sounds/yamete.mp3"))
+    const audioRessourse = createAudioResource(path.join(process.cwd(), "sounds", "yamete.mp3"))
 
     player.play(audioRessourse)
     player.on(AudioPlayerStatus.Idle ,() => {
