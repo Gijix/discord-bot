@@ -9,7 +9,7 @@ export default new Command({
   name: 'delete',
   description: 'Delete a number of message or all of specific user',
   permissions: ["ManageMessages"],
-  handler (message) {
+  async handler (message) {
     let arr = message.content.split(" ");
     if (message.channel.type === ChannelType.DM) return;
   
@@ -18,7 +18,7 @@ export default new Command({
         let id = message.mentions.members!.first()!.id;
   
         if (message.guild!.members.cache.find(x => x.id === id)) {
-          message.channel.messages
+          await message.channel.messages
             .fetch()
             .then((messages) =>
               message.channel
@@ -28,7 +28,7 @@ export default new Command({
         }
       } else {
         const num = parseInt(arr[1]);
-        message.channel.bulkDelete(num + 1).catch((err) => console.error(err));
+        await message.channel.bulkDelete(num + 1).catch((err) => console.error(err));
       }
     } catch (e) {
       error(e as string, __filename);

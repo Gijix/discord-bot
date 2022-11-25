@@ -2,11 +2,9 @@ import 'dotenv/config'
 import { GatewayIntentBits, ActivityType, Events } from 'discord.js'
 import Client from "./customClient.js";
 import { error, success } from './logger.js';
-import { filename } from 'dirname-filename-esm'
+import { filename } from 'dirname-filename-esm';
 
 const __filename = filename(import.meta)
-
-
 const { Guilds, GuildMessages, GuildVoiceStates, MessageContent } = GatewayIntentBits
 const bot = new Client({ intents: [Guilds, GuildMessages, GuildVoiceStates, MessageContent]});
 
@@ -21,15 +19,14 @@ bot.on(Events.ClientReady, async () => {
     status: "online",
     activities: [{
       name: `<${prefix}commandName>`,
-      type:ActivityType.Watching,
+      type: ActivityType.Watching,
     }],
   });
-  
 });
 
 bot.on(Events.InteractionCreate, (interaction) => {
   if (interaction.isChatInputCommand()) {
-      bot.commandHandler.slashs.get(interaction.commandName)?.handler(interaction, bot)
+    bot.commandHandler.slashs.get(interaction.commandName)?.handler(interaction, bot)
   }
 
   if (interaction.isUserContextMenuCommand() || interaction.isMessageContextMenuCommand()) {
@@ -48,36 +45,36 @@ bot.on(Events.MessageCreate, async (message) => {
   bot.commandHandler.runMessage(message, bot)
 });
 
-bot.on("messageDelete", async (messageDelete) => {
+bot.on(Events.MessageDelete, async (messageDelete) => {
   // bot.logDeleteMsg(messageDelete);
 });
 
-bot.on("messageUpdate", (oldMessage, newMessage) => {
+bot.on(Events.MessageUpdate, (oldMessage, newMessage) => {
   if (newMessage.author!.bot) return;
   // bot.logUpdateMsg(oldMessage, newMessage);
 });
 
-bot.on("guildMemberAdd", (member) => {
+bot.on(Events.GuildMemberAdd, (member) => {
   // bot.logUserState(member);
 });
 
-bot.on("guildMemberRemove",(member) => {
+bot.on(Events.GuildMemberRemove,(member) => {
   // bot.logUserState(member)
 })
 
-bot.on("voiceStateUpdate", async (oldstate, newstate) => {
+bot.on(Events.VoiceStateUpdate, async (oldstate, newstate) => {
   // bot.logVoiceUpdate(oldstate, newstate);
 });
 
 bot.player.on('error',(err: string)=> error(err, __filename))
 
-bot.on("error", (err) => {
+bot.on(Events.Error, (err) => {
   error(err, __filename, true);
 });
 
-await bot.commandHandler.load()
-await bot.contextMenuHandler.load()
-await bot.modalHandler.load()
-// await bot.deployApplicationCommand()
-
-await bot.login(process.env.BOT_TOKEN);
+try {
+  await bot.setup()
+  await bot.login(process.env.BOT_TOKEN);
+} catch (err) {
+   error(err as Error, __filename)
+}

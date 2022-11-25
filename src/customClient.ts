@@ -1,4 +1,4 @@
-const { joinVoiceChannel } = createRequire(import.meta.url)("@discordjs/voice");
+import { joinVoiceChannel } from "@discordjs/voice";
 import { Player } from "discord-music-player";
 import { CommandHandler } from "./commandHandler.js";
 import {
@@ -18,7 +18,6 @@ import {
   } from "discord.js";
 import { ContextMenuHandler } from "./contextMenuHandler.js";
 import { ModalHandler } from "./modalHandler.js";
-import { createRequire } from "module";
 import { success } from "./logger.js";
 import { filename } from 'dirname-filename-esm'
 import { error } from "./logger.js";
@@ -28,6 +27,11 @@ const __filename = filename(import.meta)
 class myClient extends Client {
   constructor (arg: ClientOptions) {
     super(arg)
+  }
+
+  async setup () {
+    await Promise.all([this.commandHandler.load(), this.modalHandler.load(), this.contextMenuHandler.load()])
+    await this.deployApplicationCommand()
   }
 
   commandHandler = new CommandHandler('dist', 'commands')
@@ -257,6 +261,5 @@ class myClient extends Client {
     );
   }
 }
-
 
 export default myClient

@@ -8,13 +8,13 @@ export default new Command({
   permissions: ["Administrator"],
   async handler (message, bot) {
     const parsedMsg = message.content.split(" ");
-  if (parsedMsg.length > 1) {
-    message
-      .reply("Use a name without space")
-      .then((msg) => setTimeout(2500).then(() => msg.delete()));
-  } else {
-    await bot.user!.setUsername(parsedMsg[1]);
-  }
+    if (parsedMsg.length > 1) {
+      await message
+        .reply("Use a name without space")
+        .then((msg) => setTimeout(2500).then(() => msg.delete()));
+    } else {
+      await bot.user!.setUsername(parsedMsg[1]);
+    }
   }
 })
 

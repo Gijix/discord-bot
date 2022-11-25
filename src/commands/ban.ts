@@ -4,15 +4,14 @@ export default new Command({
   name : "ban",
   description: "ban mentionned user",
   permissions: ["BanMembers"],
-  handler (message) {
+  async handler (message) {
     const parsedMsg = message.content.split(" ");
     const reason = parsedMsg.slice(2).join(" ");
 
     if (message.mentions.members!.size === 1) {
-      message.mentions.members!.first()!.ban({
+      await message.mentions.members!.first()!.ban({
         reason
       });
     }
   }
 })
-
