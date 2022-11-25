@@ -1,4 +1,4 @@
-import { joinVoiceChannel } from "@discordjs/voice";
+const { joinVoiceChannel } = createRequire(import.meta.url)("@discordjs/voice");
 import { Player } from "discord-music-player";
 import { CommandHandler } from "./commandHandler.js";
 import {
@@ -18,6 +18,12 @@ import {
   } from "discord.js";
 import { ContextMenuHandler } from "./contextMenuHandler.js";
 import { ModalHandler } from "./modalHandler.js";
+import { createRequire } from "module";
+import { success } from "./logger.js";
+import { filename } from 'dirname-filename-esm'
+import { error } from "./logger.js";
+
+const __filename = filename(import.meta)
 
 class myClient extends Client {
   constructor (arg: ClientOptions) {
@@ -37,10 +43,9 @@ class myClient extends Client {
         Routes.applicationCommands(process.env.CLIENT_ID!),
         { body: [...commandsSlash, ...contextMenuCommands]  },
       ) as any[]
-      console.log(`Successfully reloaded ${data.length} application (/) commands.`);         
-    } catch(error){
-      console.log('failed deploy')
-      console.error(error)
+      success(`reloaded ${data.length} application (/) commands.`);         
+    } catch(err: unknown){
+      error(err as string, __filename)
     }
   }
 
@@ -178,7 +183,7 @@ class myClient extends Client {
       );
       this.logChannelMsg(message).send({ embeds: [embed.data]});
     } catch (e) {
-      console.error(e);
+      error(e as string, __filename);
     }
   }
 

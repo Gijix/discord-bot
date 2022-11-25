@@ -30,14 +30,14 @@ export const musicInfos: info[] = [
   },
 ];
 
-export async function play(message: Message, client: Client, prefix: string) {
+export async function play(message: Message, client: Client) {
   const { player } = client
   const isOnvoice = message.member!.voice.channelId !== undefined;
   const botOnVoice = getVoiceConnection(message.guild!.id) !== undefined
 
   if (!isOnvoice || (botOnVoice && isOnvoice !== botOnVoice)) return;
 
-  const args = message.content.slice(prefix.length).trim().split(/ +/g);
+  const args = message.content.slice(process.env.PREFIX!.length).trim().split(/ +/g);
   const command = args.shift()!.toLowerCase();
   let guildQueue = player.getQueue(message.guild!.id)!;
 

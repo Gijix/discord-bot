@@ -2,6 +2,7 @@ import { Collection } from "discord.js";
 import path from "path";
 import { readdir } from "fs/promises";
 import { BaseComponent } from "./baseComponent.js";
+import { success } from "./logger.js";
 
 export class Handler<S extends BaseComponent> {
   path: string
@@ -24,15 +25,15 @@ export class Handler<S extends BaseComponent> {
         throw new Error('import is not based on BaseComponent')
       }
 
-      if (preCache.has(baseComponent.name)) {
+      if (preCache.has(baseComponent.id || baseComponent.name)) {
         throw new Error('Collection member already exist')
       }
 
-      preCache.set(baseComponent.id || baseComponent.name, file.default)
+      preCache.set(baseComponent.id || baseComponent.name, baseComponent as S)
     }
 
-    console.log(`succesfuly loaded ${this.constructor.name}`)
-
     this.cache = preCache
+
+    success(`loaded ${this.constructor.name}`)
   }
 }

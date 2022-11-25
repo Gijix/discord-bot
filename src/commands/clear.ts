@@ -1,5 +1,9 @@
 import { Message, Collection } from "discord.js";
 import { Command } from "../commandHandler.js";
+import { filename } from 'dirname-filename-esm'
+import { error } from "../logger.js";
+
+const __filename = filename(import.meta)
 
 export default new Command({
   name: "clear",
@@ -14,8 +18,8 @@ export default new Command({
         messages = (await message.channel.messages.fetch({limit:100}))
         await message.channel.bulkDelete(messages)
       } while (messages.size >= 2)
-    } catch(error){
-      console.log({error})
+    } catch(err){
+      error(err as string, __filename)
       await message.channel.clone()
       await message.channel.delete()
     }

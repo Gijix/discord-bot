@@ -1,5 +1,9 @@
 import { ChannelType } from "discord.js";
 import { Command } from "../commandHandler.js";
+import { error } from "../logger.js";
+import { filename } from 'dirname-filename-esm'
+
+const __filename = filename(import.meta)
 
 export default new Command({
   name: 'delete',
@@ -27,7 +31,7 @@ export default new Command({
         message.channel.bulkDelete(num + 1).catch((err) => console.error(err));
       }
     } catch (e) {
-      console.error;
+      error(e as string, __filename);
     }
   }
 })

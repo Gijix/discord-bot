@@ -1,6 +1,11 @@
 import 'dotenv/config'
 import { GatewayIntentBits, ActivityType, Events } from 'discord.js'
 import Client from "./customClient.js";
+import { error, success } from './logger.js';
+import { filename } from 'dirname-filename-esm'
+
+const __filename = filename(import.meta)
+
 
 const { Guilds, GuildMessages, GuildVoiceStates, MessageContent } = GatewayIntentBits
 const bot = new Client({ intents: [Guilds, GuildMessages, GuildVoiceStates, MessageContent]});
@@ -10,7 +15,7 @@ import { play, musicInfos } from './music.js';
 const prefix = process.env.PREFIX!;
 
 bot.on(Events.ClientReady, async () => {
-  console.info("Orlando bot has started");
+  success("Orlando bot has started");
   bot.user!.setStatus('idle');
   bot.user!.setPresence({
     status: "online",
@@ -64,15 +69,15 @@ bot.on("voiceStateUpdate", async (oldstate, newstate) => {
   // bot.logVoiceUpdate(oldstate, newstate);
 });
 
-bot.player.on('error',(err: any)=> console.error(err))
+bot.player.on('error',(err: string)=> error(err, __filename))
 
-bot.on("error", (error) => {
-  console.info("The websocket connection encountered an error:", error);
+bot.on("error", (err) => {
+  error(err, __filename, true);
 });
 
 await bot.commandHandler.load()
 await bot.contextMenuHandler.load()
 await bot.modalHandler.load()
-await bot.deployApplicationCommand()
+// await bot.deployApplicationCommand()
 
 await bot.login(process.env.BOT_TOKEN);

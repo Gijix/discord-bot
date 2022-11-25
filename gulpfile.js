@@ -1,7 +1,7 @@
 import gulp from "gulp";
 import esbuild from "gulp-esbuild";
 import cp from "child_process";
-import chalk from "chalk";
+import c from "ansi-colors";
 import { deleteAsync } from "del";
 
 function _cleanDist() {
@@ -28,11 +28,11 @@ function _watch(cb) {
   const spawn = cp.spawn("nodemon dist/main --delay 1", { shell: true });
 
   spawn.stdout.on("data", (data) => {
-    console.log(chalk.white(`${data}`.trim()));
+    console.log(c.white(`${data}`.trim()));
   });
 
   spawn.stderr.on("data", (data) => {
-    console.error(chalk.red(`${data}`.trim()));
+    console.error(c.red(`${data}`.trim()));
   });
 
   spawn.on("close", () => cb());

@@ -65,8 +65,15 @@ export class CommandHandler extends Handler<Command> {
     const messagePrefix = messageCommand[0];
     const messageCommandParsed = messageCommand.slice(1);
     const command = this.messages.get(messageCommandParsed!)
+
+    if (!command) {
+      return
+    }
   
-    if (!(messagePrefix === prefix && this.isExtendedMessage(message)) || !(command?.permissions.some(perm => message.member?.permissions.has(perm)))) return 
+    if (
+      !(messagePrefix === prefix && this.isExtendedMessage(message)) ||
+      (command?.permissions && !(command?.permissions.some(perm => message.member?.permissions.has(perm))))
+      ) return 
 
     message.arguments = splitedMessage
     message.prefix = message.prefix

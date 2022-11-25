@@ -1,10 +1,18 @@
-import { createAudioResource, createAudioPlayer, AudioPlayerStatus, getVoiceConnection, NoSubscriberBehavior } from '@discordjs/voice';
+import { createReadStream } from 'fs';
 import path from "path";
 import { Command } from "../commandHandler.js";
+import { 
+  createAudioResource, 
+  createAudioPlayer, 
+  AudioPlayerStatus, 
+  getVoiceConnection, 
+  NoSubscriberBehavior, 
+} from '@discordjs/voice';
 
 export default new Command({
   name: "yamete",
   description: "Call the bot and says 'Yamete kudasai!!'",
+  permissions: ['Administrator'],
   handler (message, bot) {
     if (!message.member!.voice.channel) return;
 
@@ -13,13 +21,16 @@ export default new Command({
     if (connection) return
 
     connection = bot.join(message)
-    const { player } = connection.subscribe(createAudioPlayer({
-        behaviors: {
-          noSubscriber: NoSubscriberBehavior.Pause
-        }
-    }))!
-    const audioRessourse = createAudioResource(path.join(process.cwd(), "sounds", "yamete.mp3"))
+    const player = createAudioPlayer({
+      behaviors: {
+        noSubscriber: NoSubscriberBehavior.Pause
+      }
+    })
+  
+    connection.subscribe(player)!
 
+    const audioRessourse = createAudioResource(createReadStream(path.join(process.cwd(), "sounds", "yamete.mp3")))
+    
     player.play(audioRessourse)
     player.on(AudioPlayerStatus.Idle ,() => {
         connection.destroy()
