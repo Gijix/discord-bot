@@ -1,6 +1,6 @@
-import { joinVoiceChannel } from "@discordjs/voice";
+import { joinVoiceChannel, getVoiceConnection } from "@discordjs/voice";
 import { Player } from "discord-music-player";
-import { CommandHandler } from "./commandHandler.js";
+import { CommandHandler, MessageExtend } from "./commandHandler.js";
 import {
     Client,
     Message,
@@ -27,11 +27,30 @@ const __filename = filename(import.meta)
 class myClient extends Client {
   constructor (arg: ClientOptions) {
     super(arg)
+    this.token = process.env.BOT_TOKEN
+  }
+
+  get validatedToken (): string {
+    if (!this.isReady()) {
+      throw new Error("can't access token before login")
+    }
+
+    return this.token!
+  }
+
+  isSetup = false;
+  async login(token?: string) {
+    if (!this.isSetup) {
+      throw new Error("bot isn't setup correctly")
+    }
+
+    return await super.login(token)
   }
 
   async setup () {
-    await Promise.all([this.commandHandler.load(), this.modalHandler.load(), this.contextMenuHandler.load()])
+    await Promise.all([this.commandHandler.setup(), this.modalHandler.setup(), this.contextMenuHandler.setup()])
     await this.deployApplicationCommand()
+    this.isSetup = true
   }
 
   commandHandler = new CommandHandler('dist', 'commands')
@@ -61,6 +80,27 @@ class myClient extends Client {
     volume: 50,
     quality: "high",
   });
+
+  checkPlayerCondition (message: MessageExtend) {
+    const { player } = this
+    const queue = player.getQueue(message.guildId)
+    const isOnvoice = message.member!.voice.channelId !== null;
+    const botOnVoice = getVoiceConnection(message.guild!.id) !== undefined
+
+    if (!botOnVoice) {
+      message.reply('bot already in a voice channel')
+
+      return
+    }
+
+    if (!isOnvoice) {
+      message.reply('join a voice channel for playing song')
+
+      return
+    }
+
+    return { queue, player }
+  }
 
   CONFIG_CHANNEL_ID = null
   LOG_CHANNEL_ID = "871760169770582066"

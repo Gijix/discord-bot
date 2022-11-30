@@ -1,4 +1,4 @@
-import 'dotenv/config'
+import './envCheck.js'
 import { GatewayIntentBits, ActivityType, Events } from 'discord.js'
 import Client from "./customClient.js";
 import { error, success } from './logger.js';
@@ -74,7 +74,7 @@ bot.on(Events.Error, (err) => {
 
 try {
   await bot.setup()
-  await bot.login(process.env.BOT_TOKEN);
+  await bot.login();
 } catch (err) {
-   error(err as Error, __filename)
+   error(err as Error, __filename, true)
 }

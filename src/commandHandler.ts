@@ -8,10 +8,14 @@ import {
 import Client from "./customClient.js";
 import { Handler } from "./baseHandler.js";
 import { BaseComponent } from "./baseComponent.js";
+import { error } from "./logger.js";
+import { filename } from 'dirname-filename-esm';
+
+const __filename = filename(import.meta)
 
 type NonEmptyString<T extends string> = T extends '' ? never : T;
 
-type MessageExtend = Message & {
+export type MessageExtend = Message<true> & {
   prefix: string;
   command: string;
   arguments: string[];
@@ -43,11 +47,7 @@ export class CommandHandler extends Handler<Command> {
   isExtendedMessage(
     message: Message 
   ): message is MessageExtend {
-    if (message.channel.isTextBased()) {
-      return true
-    }
-
-    return false
+    return message.inGuild()
   }
 
   get messages () {
@@ -67,6 +67,7 @@ export class CommandHandler extends Handler<Command> {
     const command = this.messages.get(messageCommandParsed!)
 
     if (!command) {
+      error("command doesn't exist", __filename)
       return
     }
   

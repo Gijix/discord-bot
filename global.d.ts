@@ -1,4 +1,6 @@
-declare module 'map-folder' {
-  const foo: Function
-  export = foo
+declare namespace NodeJS {
+  export interface ProcessEnv {
+    BOT_TOKEN: string,
+    PREFIX: string
+  }
 }

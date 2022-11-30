@@ -9,6 +9,6 @@ export default new Command({
     await message.reply("i will restart in 5 seconds")
     await setTimeout(5000)
     bot.destroy() 
-    await bot.login(process.env.BOT_TOKEN)
+    await bot.login()
   }
 })

@@ -1,6 +1,6 @@
 import { Collection } from "discord.js";
 import path from "path";
-import { readdir } from "fs/promises";
+import { readdir, stat } from "fs/promises";
 import { BaseComponent } from "./baseComponent.js";
 import { success } from "./logger.js";
 
@@ -12,12 +12,28 @@ export class Handler<S extends BaseComponent> {
     this.path = path.join(process.cwd(), ...args)
   }
 
-  async load () {
-    const filenames = await readdir(this.path);
-    const preCache = new Collection<string, S>()
+  async setup () {
+    this.cache = await this.load()
 
-    for (const filename of filenames) {
-      const filepath = this.path + '/' + filename
+    success(`loaded ${this.constructor.name} (loaded ${this.cache.size})`)
+  }
+
+  async load (...paths: string[]): Promise<Collection<string, S>> {
+    const filenames = await readdir(path.join(this.path, ...paths));
+    let preCache = new Collection<string, S>()
+
+    for await (const filename of filenames) {
+      const filepath = path.join(this.path,...paths, filename)
+      const isDir = (await stat(filepath)).isDirectory()
+      
+      if (isDir) {
+        const subCache = await this.load(...paths, filename)
+
+        preCache = preCache.concat(subCache)
+
+        continue
+      }
+
       const file = (await import("file://" + filepath)) as { default: any };
       const baseComponent = file.default
 
@@ -29,11 +45,13 @@ export class Handler<S extends BaseComponent> {
         throw new Error('Collection member already exist')
       }
 
+      if (paths.length !== 0) {
+        baseComponent.category = paths.join('-')
+      }
+
       preCache.set(baseComponent.id || baseComponent.name, baseComponent as S)
     }
 
-    this.cache = preCache
-
-    success(`loaded ${this.constructor.name}`)
+    return preCache
   }
 }
