@@ -19,7 +19,7 @@ export default new Command({
         await message.channel.bulkDelete(messages)
       } while (messages.size >= 2)
     } catch(err){
-      error(err as string, __filename)
+      error(err as string | Error, __filename)
       await message.channel.clone()
       await message.channel.delete()
     }

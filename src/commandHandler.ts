@@ -3,7 +3,10 @@ import {
   ChatInputCommandInteraction,
   PermissionsString,
   SlashCommandBuilder,
-  Collection
+  Collection,
+  MessagePayload,
+  MessageCreateOptions,
+  SlashCommandSubcommandsOnlyBuilder
 } from "discord.js";
 import Client from "./customClient.js";
 import { Handler } from "./baseHandler.js";
@@ -19,6 +22,7 @@ export type MessageExtend = Message<true> & {
   prefix: string;
   command: string;
   arguments: string[];
+  send (options: string | MessagePayload | MessageCreateOptions): Promise<Message<true>>
 };
 
 type BaseHandler<S> = (
@@ -34,7 +38,7 @@ interface BaseCommandOption<T extends string, S extends string> {
 
 interface ChatInteractionOption<T extends string, S extends string> extends BaseCommandOption<T, S> {
   isSlash: true;
-  builder?: SlashCommandBuilder
+  builder?: SlashCommandBuilder | SlashCommandSubcommandsOnlyBuilder
   handler(param: ChatInputCommandInteraction, bot: Client): Promise<void> | void;
 }
 
@@ -79,6 +83,7 @@ export class CommandHandler extends Handler<Command> {
     message.arguments = splitedMessage
     message.prefix = message.prefix
     message.command = messageCommandParsed
+    message.send = message.channel.send
 
     await command.handler(message, bot)
   }
@@ -87,7 +92,7 @@ export class CommandHandler extends Handler<Command> {
 export class Command<T extends boolean = boolean, R extends string = string, U extends string = string> extends BaseComponent<BaseHandler<boolean>> {
   description: string;
   isSlash: T;
-  data?: SlashCommandBuilder;
+  data?: SlashCommandBuilder | SlashCommandSubcommandsOnlyBuilder;
   permissions: PermissionsString[] = [];
 
   constructor(options: MessageOption<R, U> | ChatInteractionOption<R, U>) {
@@ -97,12 +102,15 @@ export class Command<T extends boolean = boolean, R extends string = string, U e
     > )
 
     const value = (isSlash || false) as T;
+
     this.description = description;
     this.isSlash = value;
     this.permissions = permissions || [];
+
     if (options.isSlash && options.builder) {
       this.data = options.builder
     }
+
     if (value === true) {
       this.data = new SlashCommandBuilder()
         .setName(name)

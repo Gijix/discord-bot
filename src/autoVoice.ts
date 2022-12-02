@@ -1,9 +1,26 @@
-import { VoiceState, ChannelType, CategoryChannel, VoiceChannel } from "discord.js";
+import { VoiceState, ChannelType, CategoryChannel, VoiceChannel, Collection, Guild } from "discord.js";
 
 let temporary: string[] = [];
 
 const channelID = "870994373159039017";
 const categoryID = ""
+
+
+function createAutoVoice (name: string) {
+  const channel = new VoiceChannel()
+    channel.setName(name)
+    
+}
+
+export class AutoVoiceManager {
+  // static channels: Collection<string, VoiceChannel> = new Collection()
+  // static async onVoiceEnter (voiceState: VoiceState & { channelId: string }) {
+  //   const creationChannel = this.channels.get(voiceState.channelId)!
+
+  //   const channel = new VoiceChannel()
+  // }
+  // temporaryChannels: Collection<string, VoiceChannel> = new Collection() 
+}
 
 export function fn(oldState: VoiceState, newState: VoiceState) {
   if (newState.channelId) {

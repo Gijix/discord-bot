@@ -41,8 +41,10 @@ export class Handler<S extends BaseComponent> {
         throw new Error('import is not based on BaseComponent')
       }
 
-      if (preCache.has(baseComponent.id || baseComponent.name)) {
-        throw new Error('Collection member already exist')
+      const identifier =baseComponent.id || baseComponent.name
+
+      if (preCache.has(identifier)) {
+        throw new Error(`Collection member already exist ${identifier}`)
       }
 
       if (paths.length !== 0) {
