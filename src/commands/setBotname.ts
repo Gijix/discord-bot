@@ -5,14 +5,14 @@ export default new Command({
   name: "setBotname",
   description: "Set the bot name",
   permissions: ["Administrator"],
-  async handler (message, bot) {
+  async handler (message) {
     const parsedMsg = message.content.split(" ");
     if (parsedMsg.length > 1) {
       await message
-        .reply("Use a name without space")
-        .then((msg) => setTimeout(2500).then(() => msg.delete()));
+        .replyDefer("Use a name without space")
+        .then((msg) => msg.deferDelete(2000));
     } else {
-      await bot.user!.setUsername(parsedMsg[1]);
+      await this.user!.setUsername(parsedMsg[1]);
     }
   }
 })

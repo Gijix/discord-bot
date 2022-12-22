@@ -5,10 +5,10 @@ export default new Command({
   name: "reset",
   description: "restart the bot",
   permissions: ["Administrator"],
-  async handler (message, bot) {
+  async handler (message) {
     await message.reply("i will restart in 5 seconds")
     await setTimeout(5000)
-    bot.destroy() 
-    await bot.login()
+    this.destroy() 
+    await this.login()
   }
 })

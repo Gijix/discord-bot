@@ -7,9 +7,7 @@ const categoryID = ""
 
 
 function createAutoVoice (name: string) {
-  const channel = new VoiceChannel()
-    channel.setName(name)
-    
+  
 }
 
 export class AutoVoiceManager {
@@ -63,5 +61,3 @@ export function fn(oldState: VoiceState, newState: VoiceState) {
         .catch((e) => console.error(e));
   }
 }
-
-export const name = "autoVoiceCreate";

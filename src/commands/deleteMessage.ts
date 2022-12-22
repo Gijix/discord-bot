@@ -10,8 +10,7 @@ export default new Command({
   description: 'Delete a number of message or all of specific user',
   permissions: ["ManageMessages"],
   async handler (message) {
-    let arr = message.content.split(" ");
-    if (message.channel.type === ChannelType.DM) return;
+    let arr = message.arguments
   
     try {
       if (isNaN(parseInt(arr[1]))) {
@@ -28,7 +27,7 @@ export default new Command({
         }
       } else {
         const num = parseInt(arr[1]);
-        await message.channel.bulkDelete(num + 1).catch((err) => console.error(err));
+        await message.channel.bulkDelete(num + 1).catch((err: Error | string) => error(err,));
       }
     } catch (e) {
       error(e as string, __filename);

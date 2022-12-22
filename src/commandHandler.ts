@@ -4,30 +4,44 @@ import {
   PermissionsString,
   SlashCommandBuilder,
   Collection,
+  SlashCommandSubcommandsOnlyBuilder,
+  MessageMentions,
+  GuildMember,
   MessagePayload,
-  MessageCreateOptions,
-  SlashCommandSubcommandsOnlyBuilder
+  MessageCreateOptions
 } from "discord.js";
 import Client from "./customClient.js";
 import { Handler } from "./baseHandler.js";
 import { BaseComponent } from "./baseComponent.js";
 import { error } from "./logger.js";
 import { filename } from 'dirname-filename-esm';
+import { setTimeout } from "timers/promises";
+
 
 const __filename = filename(import.meta)
 
 type NonEmptyString<T extends string> = T extends '' ? never : T;
 
-export type MessageExtend = Message<true> & {
-  prefix: string;
+type DeferableMessage = Message<true> & {
+  deferDelete (delay: number): Promise<Message<true>> 
+}
+
+async function deferDelete (this: DeferableMessage, delay: number): Promise<Message<true>> {
+  await setTimeout(delay);
+  return await this.delete();
+}
+
+export interface MessageCommand extends DeferableMessage {
   command: string;
   arguments: string[];
-  send (options: string | MessagePayload | MessageCreateOptions): Promise<Message<true>>
+  send (arg: string | MessagePayload | MessageCreateOptions): Promise<DeferableMessage>
+  member: GuildMember
+  replyDefer (arg: string | MessagePayload | MessageCreateOptions): Promise<DeferableMessage>
 };
 
 type BaseHandler<S> = (
-  param: S extends true ? MessageExtend : ChatInputCommandInteraction,
-  bot: Client
+  this: Client,
+  param: S extends true ? MessageCommand : ChatInputCommandInteraction,
 ) => void | Promise<void>;
 
 interface BaseCommandOption<T extends string, S extends string> {
@@ -39,19 +53,28 @@ interface BaseCommandOption<T extends string, S extends string> {
 interface ChatInteractionOption<T extends string, S extends string> extends BaseCommandOption<T, S> {
   isSlash: true;
   builder?: SlashCommandBuilder | SlashCommandSubcommandsOnlyBuilder
-  handler(param: ChatInputCommandInteraction, bot: Client): Promise<void> | void;
+  handler(this: Client, param: ChatInputCommandInteraction): Promise<void> | void;
 }
 
 interface MessageOption <T extends string, S extends string> extends BaseCommandOption<T, S> {
   isSlash?: false;
-  handler(param: MessageExtend, bot: Client): void | Promise<void>;
+  handler(this: Client, param: MessageCommand, bot: Client): void | Promise<void>;
+}
+
+function isMention (str: string) {
+  return [
+    MessageMentions.ChannelsPattern,
+    MessageMentions.RolesPattern,
+    MessageMentions.UsersPattern,
+    MessageMentions.EveryonePattern
+  ].some((regex) => regex.test(str))
 }
 
 export class CommandHandler extends Handler<Command> {
   isExtendedMessage(
     message: Message 
-  ): message is MessageExtend {
-    return message.inGuild()
+  ): message is MessageCommand {
+    return (message.inGuild() && Boolean(message.member))
   }
 
   get messages () {
@@ -64,28 +87,40 @@ export class CommandHandler extends Handler<Command> {
 
   async runMessage(message: Message, bot: Client) {
     const prefix = process.env.PREFIX!;
-    const splitedMessage = message.content.split(" ");
+    const splitedMessage = message.content.split(" ").filter((str) => str);
     const messageCommand = splitedMessage.shift()!;
     const messagePrefix = messageCommand[0];
     const messageCommandParsed = messageCommand.slice(1);
     const command = this.messages.get(messageCommandParsed!)
-
+  
     if (!command) {
       error("command doesn't exist", __filename)
       return
     }
-  
+    
     if (
       !(messagePrefix === prefix && this.isExtendedMessage(message)) ||
-      (command?.permissions && !(command?.permissions.some(perm => message.member?.permissions.has(perm))))
-      ) return 
+      (command?.permissions.length && !(command?.permissions.some(perm => message.member?.permissions.has(perm))))
+    ) return 
 
-    message.arguments = splitedMessage
-    message.prefix = message.prefix
+    message.arguments = splitedMessage.filter(str => !isMention(str))
     message.command = messageCommandParsed
-    message.send = message.channel.send
+    message.deferDelete = deferDelete
+    message.send = async function (arg: string | MessageCreateOptions | MessagePayload) {
+      const msg = (await this.channel.send(arg)) as DeferableMessage
+      msg.deferDelete = deferDelete
 
-    await command.handler(message, bot)
+      return msg
+    }
+
+    message.replyDefer = async function (arg: string | MessageCreateOptions | MessagePayload) {
+      const msg = await this.reply(arg) as DeferableMessage
+      msg.deferDelete = deferDelete
+
+      return msg
+    }
+
+    await command.handler.call(bot, message) 
   }
 }
 
@@ -107,14 +142,16 @@ export class Command<T extends boolean = boolean, R extends string = string, U e
     this.isSlash = value;
     this.permissions = permissions || [];
 
-    if (options.isSlash && options.builder) {
-      this.data = options.builder
-    }
-
     if (value === true) {
       this.data = new SlashCommandBuilder()
         .setName(name)
         .setDescription(description)
     }
+
+    if (options.isSlash && options.builder) {
+      this.data = options.builder
+    }
+
+    
   }
 }

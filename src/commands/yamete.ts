@@ -6,21 +6,22 @@ import {
   createAudioPlayer, 
   AudioPlayerStatus, 
   getVoiceConnection, 
-  NoSubscriberBehavior, 
+  NoSubscriberBehavior,
+  StreamType, 
 } from '@discordjs/voice';
 
 export default new Command({
   name: "yamete",
   description: "Call the bot and says 'Yamete kudasai!!'",
   permissions: ['Administrator'],
-  handler (message, bot) {
+  handler (message) {
     if (!message.member!.voice.channel) return;
 
     let connection = getVoiceConnection(message.guildId!)!
 
-    if (connection) return
+    if (connection && connection.joinConfig.channelId !== message.member.voice.channelId) return
 
-    connection = bot.join(message)
+    connection = connection || this.join(message)
     const player = createAudioPlayer({
       behaviors: {
         noSubscriber: NoSubscriberBehavior.Pause
@@ -29,7 +30,11 @@ export default new Command({
   
     connection.subscribe(player)!
 
-    const audioRessourse = createAudioResource(createReadStream(path.join(process.cwd(), "sounds", "yamete.mp3")))
+    const audioRessourse = createAudioResource(createReadStream(path.join(process.cwd(), "sounds", "yamete.ogg")),
+    {
+      inlineVolume: true,
+      inputType: StreamType.OggOpus
+    })
     
     player.play(audioRessourse)
     player.on(AudioPlayerStatus.Idle ,() => {

@@ -4,7 +4,7 @@ export default new Command({
   name: 'trigger',
   description: 'trigger',
   isSlash: true,
-  async handler(interaction, bot) {
-    await bot.modalHandler.cache.get('modal1')!.trigger(interaction)
+  async handler(interaction) {
+    await this.modalHandler.cache.get('modal1')!.trigger(interaction)
   }
 })

@@ -1,21 +1,19 @@
 import './envCheck.js'
 import { GatewayIntentBits, ActivityType, Events } from 'discord.js'
 import Client from "./customClient.js";
-import { error, success } from './logger.js';
+import { error, log, success } from './logger.js';
 import { filename } from 'dirname-filename-esm';
+import { envCheck } from './envCheck.js';
 
 const __filename = filename(import.meta)
 const { Guilds, GuildMessages, GuildVoiceStates, MessageContent } = GatewayIntentBits
 const bot = new Client({ intents: [Guilds, GuildMessages, GuildVoiceStates, MessageContent]});
-
-import { play, musicInfos } from './music.js';
-
 const prefix = process.env.PREFIX!;
 
-bot.on(Events.ClientReady, async () => {
+bot.on(Events.ClientReady, async (client) => {
   success("Orlando bot has started");
-  bot.user!.setStatus('idle');
-  bot.user!.setPresence({
+  client.user!.setStatus('idle');
+  client.user!.setPresence({
     status: "online",
     activities: [{
       name: `<${prefix}commandName>`,
@@ -26,7 +24,7 @@ bot.on(Events.ClientReady, async () => {
 
 bot.on(Events.InteractionCreate, (interaction) => {
   if (interaction.isChatInputCommand()) {
-    bot.commandHandler.slashs.get(interaction.commandName)?.handler(interaction, bot)
+    bot.commandHandler.slashs.get(interaction.commandName)?.handler.call(bot, interaction)
   }
 
   if (interaction.isUserContextMenuCommand() || interaction.isMessageContextMenuCommand()) {
@@ -41,8 +39,7 @@ bot.on(Events.InteractionCreate, (interaction) => {
 bot.on(Events.MessageCreate, async (message) => {
   if (message.author.bot) return;
   // bot.logMsg(message, prefix);
-
-  bot.commandHandler.runMessage(message, bot)
+  bot.commandHandler.runMessage(message, bot).catch((e) => error(e, __filename))
 });
 
 bot.on(Events.MessageDelete, async (messageDelete) => {
@@ -66,13 +63,12 @@ bot.on(Events.VoiceStateUpdate, async (oldstate, newstate) => {
   // bot.logVoiceUpdate(oldstate, newstate);
 });
 
-bot.player.on('error',(err: string)=> error(err, __filename))
-
 bot.on(Events.Error, (err) => {
   error(err, __filename, true);
 });
 
 try {
+  envCheck()
   await bot.setup()
   await bot.login();
 } catch (err) {

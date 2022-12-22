@@ -9,7 +9,7 @@ import { BaseComponent } from "./baseComponent.js";
 import { Handler } from "./baseHandler.js";
 
 type CurrentInteraction<T> = T extends 2 ? UserContextMenuCommandInteraction : MessageContextMenuCommandInteraction 
-type ContextMenuHandlerType<T extends ContextMenuCommandType> = (interaction: CurrentInteraction<T>, bot: Client) => Promise<void> | void
+type ContextMenuHandlerType<T extends ContextMenuCommandType> = (this: Client, interaction: CurrentInteraction<T>) => Promise<void> | void
 
 interface ContextMenuOptions<T extends ContextMenuCommandType> {
   name: string
@@ -32,6 +32,6 @@ export class ContextMenuCommand<T extends ContextMenuCommandType = ContextMenuCo
 
 export class ContextMenuHandler extends Handler<ContextMenuCommand> {
   async runUserContextMenuInteraction (interaction: UserContextMenuCommandInteraction | MessageContextMenuCommandInteraction, bot: Client) {
-    await this.cache.get(interaction.commandName)?.handler(interaction, bot)
+    await this.cache.get(interaction.commandName)?.handler.call(bot, interaction)
   }
 }

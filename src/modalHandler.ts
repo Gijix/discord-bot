@@ -21,7 +21,7 @@ type ComponentOptions = {[key: string]: {
   placeholder?: string;
 }}
 
-type ModalHandlerFunction<T extends ComponentOptions> = (data:{[K in keyof T]: string}, interaction: ModalSubmitInteraction, bot: Client) => void | Promise<void>
+type ModalHandlerFunction<T extends ComponentOptions> = (this: Client, data:{[K in keyof T]: string}, interaction: ModalSubmitInteraction) => void | Promise<void>
 
 interface ModalOptions<T extends ComponentOptions> {
   name: string
@@ -61,7 +61,7 @@ export class ModalHandler extends Handler<Modal> {
     interaction.fields.fields.forEach((textInput) => {
       fieldList[textInput.customId] = textInput.value 
     })
-    this.cache.get(interaction.customId)!.handler(fieldList, interaction, bot)
-    
+
+    this.cache.get(interaction.customId)!.handler.call(bot, fieldList, interaction)
   }
 }

@@ -7,9 +7,9 @@ export default new ContextMenuCommand({
   async handler (interaction) {
     const embed = new EmbedBuilder({
       image: {
-        url: interaction.targetUser.displayAvatarURL({ size: 2048 }),
-        width: 2048,
-        height: 2048,
+        url: interaction.targetUser.displayAvatarURL({ size: 4096 }),
+        width: 4096,
+        height: 4096,
       }
     })
 

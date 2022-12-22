@@ -1,8 +1,8 @@
 import { Collection } from "discord.js";
 import path from "path";
-import { readdir, stat } from "fs/promises";
+import { readdir } from "fs/promises";
 import { BaseComponent } from "./baseComponent.js";
-import { success } from "./logger.js";
+import { log } from "./logger.js";
 
 export class Handler<S extends BaseComponent> {
   path: string
@@ -15,23 +15,26 @@ export class Handler<S extends BaseComponent> {
   async setup () {
     this.cache = await this.load()
 
-    success(`loaded ${this.constructor.name} (loaded ${this.cache.size})`)
+    log(`loaded ${this.constructor.name} (loaded ${this.cache.size})`)
   }
 
   async load (...paths: string[]): Promise<Collection<string, S>> {
-    const filenames = await readdir(path.join(this.path, ...paths));
+    const filenames = await readdir(path.join(this.path, ...paths), { withFileTypes: true });
     let preCache = new Collection<string, S>()
 
     for await (const filename of filenames) {
-      const filepath = path.join(this.path,...paths, filename)
-      const isDir = (await stat(filepath)).isDirectory()
+      const filepath = path.join(this.path,...paths, filename.name)
       
-      if (isDir) {
-        const subCache = await this.load(...paths, filename)
+      if (filename.isDirectory()) {
+        const subCache = await this.load(...paths, filename.name)
 
         preCache = preCache.concat(subCache)
 
         continue
+      }
+
+      if (!filename.isFile()) {
+        throw new Error('incorrect file type')
       }
 
       const file = (await import("file://" + filepath)) as { default: any };
@@ -41,7 +44,7 @@ export class Handler<S extends BaseComponent> {
         throw new Error('import is not based on BaseComponent')
       }
 
-      const identifier =baseComponent.id || baseComponent.name
+      const identifier = baseComponent.id || baseComponent.name
 
       if (preCache.has(identifier)) {
         throw new Error(`Collection member already exist ${identifier}`)

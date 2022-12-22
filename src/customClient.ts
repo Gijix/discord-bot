@@ -1,6 +1,5 @@
 import { joinVoiceChannel, getVoiceConnection } from "@discordjs/voice";
-import { Player } from "discord-music-player";
-import { CommandHandler, MessageExtend } from "./commandHandler.js";
+import { CommandHandler, MessageCommand } from "./commandHandler.js";
 import {
     Client,
     Message,
@@ -18,9 +17,10 @@ import {
   } from "discord.js";
 import { ContextMenuHandler } from "./contextMenuHandler.js";
 import { ModalHandler } from "./modalHandler.js";
-import { success } from "./logger.js";
+import { log } from "./logger.js";
 import { filename } from 'dirname-filename-esm'
 import { error } from "./logger.js";
+import { PlayerManager } from "./musicPlayer.js";
 
 const __filename = filename(import.meta)
 
@@ -30,15 +30,8 @@ class myClient extends Client {
     this.token = process.env.BOT_TOKEN
   }
 
-  get validatedToken (): string {
-    if (!this.isReady()) {
-      throw new Error("can't access token before login")
-    }
-
-    return this.token!
-  }
-
   isSetup = false;
+
   async login(token?: string) {
     if (!this.isSetup) {
       throw new Error("bot isn't setup correctly")
@@ -58,7 +51,7 @@ class myClient extends Client {
   modalHandler = new ModalHandler('dist', 'modals')
 
   async deployApplicationCommand () {
-    const rest = new REST({ version: '10' }).setToken(process.env.BOT_TOKEN!);
+    const rest = new REST({ version: '10' }).setToken(process.env.BOT_TOKEN);
     const commandsSlash = this.commandHandler.slashs.map((command) => command.data?.toJSON())
     const contextMenuCommands = this.contextMenuHandler.cache.map((command) => command.builder.toJSON())
     try {
@@ -66,40 +59,32 @@ class myClient extends Client {
         Routes.applicationCommands(process.env.CLIENT_ID!),
         { body: [...commandsSlash, ...contextMenuCommands]  },
       ) as any[]
-      success(`reloaded ${data.length} application (/) commands.`);         
-    } catch(err: unknown){
+      log(`reloaded ${data.length} application (/) commands.`);         
+    } catch(err){
       error(err as string, __filename)
     }
   }
 
-  player = new Player(this, {
-    leaveOnEnd: false,
-    leaveOnStop: false,
-    leaveOnEmpty: true,
-    timeout: 0,
-    volume: 50,
-    quality: "high",
-  });
+  playerManager = new PlayerManager(this)
 
-  checkPlayerCondition (message: MessageExtend) {
-    const { player } = this
-    const queue = player.getQueue(message.guildId)
-    const isOnvoice = message.member!.voice.channelId !== null;
-    const botOnVoice = getVoiceConnection(message.guild!.id) !== undefined
-
-    if (!botOnVoice) {
-      message.reply('bot already in a voice channel')
-
-      return
-    }
-
+  checkPlayerCondition (message: MessageCommand) {
+    const userChannelId = message.member.voice.channelId
+    const botChannelId = message.guild.members.me!.voice.channelId
+    const isOnvoice = userChannelId !== null;
+    const botOnVoice = botChannelId !== null
     if (!isOnvoice) {
       message.reply('join a voice channel for playing song')
 
       return
     }
 
-    return { queue, player }
+    if (botOnVoice &&  userChannelId !== botChannelId) {
+      message.reply('bot already in a voice channel')
+
+      return
+    }
+
+    return 
   }
 
   CONFIG_CHANNEL_ID = null
@@ -108,11 +93,15 @@ class myClient extends Client {
 
   prefix = process.env.PREFIX!
 
-  join (message: Message) {
+  join (member: GuildMember) {
+    const channelId = member.voice.channelId
+
+    if (!channelId) return
+
     return joinVoiceChannel({
-      guildId:message.guildId!,
-      channelId:message.member!.voice.channelId!,
-      adapterCreator:message.guild!.voiceAdapterCreator
+      guildId: member.guild.id,
+      channelId: channelId,
+      adapterCreator: member.guild.voiceAdapterCreator
     })
   }
 
@@ -145,11 +134,11 @@ class myClient extends Client {
    *  get date information
    */
   get eventTime() {
-    const checkNum = (arg: number): number | string => {
+    const checkNum = (arg: number): string => {
       if (arg < 10) {
         return "0" + arg;
       } else {
-        return arg;
+        return arg.toString();
       }
     };
     const createdAt = new Date();
