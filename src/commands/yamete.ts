@@ -21,7 +21,7 @@ export default new Command({
 
     if (connection && connection.joinConfig.channelId !== message.member.voice.channelId) return
 
-    connection = connection || this.join(message)
+    connection = connection || this.join(message.member)
     const player = createAudioPlayer({
       behaviors: {
         noSubscriber: NoSubscriberBehavior.Pause

@@ -4,11 +4,13 @@ import {
   PermissionsString,
   SlashCommandBuilder,
   Collection,
-  SlashCommandSubcommandsOnlyBuilder,
   MessageMentions,
   GuildMember,
   MessagePayload,
-  MessageCreateOptions
+  MessageCreateOptions,
+  SharedSlashCommandOptions,
+  SharedNameAndDescription,
+  RESTPostAPIChatInputApplicationCommandsJSONBody
 } from "discord.js";
 import Client from "./customClient.js";
 import { Handler } from "./baseHandler.js";
@@ -23,10 +25,14 @@ const __filename = filename(import.meta)
 type NonEmptyString<T extends string> = T extends '' ? never : T;
 
 type DeferableMessage = Message<true> & {
-  deferDelete (delay: number): Promise<Message<true>> 
+  deferDelete (delay?: number): Promise<Message<true>> 
 }
 
-async function deferDelete (this: DeferableMessage, delay: number): Promise<Message<true>> {
+interface Builder extends Partial<SharedSlashCommandOptions>, SharedNameAndDescription {
+  toJSON (): RESTPostAPIChatInputApplicationCommandsJSONBody
+}
+
+async function deferDelete (this: DeferableMessage, delay = 0): Promise<Message<true>> {
   await setTimeout(delay);
   return await this.delete();
 }
@@ -40,7 +46,7 @@ export interface MessageCommand extends DeferableMessage {
 };
 
 type BaseHandler<S> = (
-  this: Client,
+  this: Client<true>,
   param: S extends true ? MessageCommand : ChatInputCommandInteraction,
 ) => void | Promise<void>;
 
@@ -52,13 +58,13 @@ interface BaseCommandOption<T extends string, S extends string> {
 
 interface ChatInteractionOption<T extends string, S extends string> extends BaseCommandOption<T, S> {
   isSlash: true;
-  builder?: SlashCommandBuilder | SlashCommandSubcommandsOnlyBuilder
-  handler(this: Client, param: ChatInputCommandInteraction): Promise<void> | void;
+  builder?: Builder
+  handler(this: Client<true>, param: ChatInputCommandInteraction): Promise<void> | void;
 }
 
 interface MessageOption <T extends string, S extends string> extends BaseCommandOption<T, S> {
   isSlash?: false;
-  handler(this: Client, param: MessageCommand, bot: Client): void | Promise<void>;
+  handler(this: Client<true>, param: MessageCommand, bot: Client): void | Promise<void>;
 }
 
 function isMention (str: string) {
@@ -85,7 +91,7 @@ export class CommandHandler extends Handler<Command> {
     return this.cache.filter(command => command.isSlash) as Collection<string, Command<true>>
   }
 
-  async runMessage(message: Message, bot: Client) {
+  async runMessage(message: Message, bot: Client<true>) {
     const prefix = process.env.PREFIX!;
     const splitedMessage = message.content.split(" ").filter((str) => str);
     const messageCommand = splitedMessage.shift()!;
@@ -94,7 +100,7 @@ export class CommandHandler extends Handler<Command> {
     const command = this.messages.get(messageCommandParsed!)
   
     if (!command) {
-      error("command doesn't exist", __filename)
+      error(`command doesn't exist: ${messageCommandParsed}`, __filename)
       return
     }
     
@@ -127,7 +133,7 @@ export class CommandHandler extends Handler<Command> {
 export class Command<T extends boolean = boolean, R extends string = string, U extends string = string> extends BaseComponent<BaseHandler<boolean>> {
   description: string;
   isSlash: T;
-  data?: SlashCommandBuilder | SlashCommandSubcommandsOnlyBuilder;
+  data?: Builder;
   permissions: PermissionsString[] = [];
 
   constructor(options: MessageOption<R, U> | ChatInteractionOption<R, U>) {
@@ -142,16 +148,14 @@ export class Command<T extends boolean = boolean, R extends string = string, U e
     this.isSlash = value;
     this.permissions = permissions || [];
 
-    if (value === true) {
-      this.data = new SlashCommandBuilder()
-        .setName(name)
-        .setDescription(description)
-    }
-
     if (options.isSlash && options.builder) {
       this.data = options.builder
     }
 
-    
+    if (value === true) {
+      this.data = (this.data || new SlashCommandBuilder())
+        .setName(name)
+        .setDescription(description)
+    }
   }
 }

@@ -1,4 +1,4 @@
-import { joinVoiceChannel, getVoiceConnection } from "@discordjs/voice";
+import { joinVoiceChannel } from "@discordjs/voice";
 import { CommandHandler, MessageCommand } from "./commandHandler.js";
 import {
     Client,
@@ -15,6 +15,7 @@ import {
     REST,
     Routes,
   } from "discord.js";
+import { PrismaClient } from '@prisma/client'
 import { ContextMenuHandler } from "./contextMenuHandler.js";
 import { ModalHandler } from "./modalHandler.js";
 import { log } from "./logger.js";
@@ -24,20 +25,27 @@ import { PlayerManager } from "./musicPlayer.js";
 
 const __filename = filename(import.meta)
 
-class myClient extends Client {
+export const prismaClient = new PrismaClient()
+
+class myClient<T extends boolean = boolean> extends Client<T> {
   constructor (arg: ClientOptions) {
     super(arg)
-    this.token = process.env.BOT_TOKEN
   }
 
+  db = prismaClient
+
   isSetup = false;
+
+  isReady (): this is myClient<true> {
+    return super.isReady()
+  }
 
   async login(token?: string) {
     if (!this.isSetup) {
       throw new Error("bot isn't setup correctly")
     }
 
-    return await super.login(token)
+    return await super.login(token || process.env.BOT_TOKEN)
   }
 
   async setup () {
@@ -49,6 +57,7 @@ class myClient extends Client {
   commandHandler = new CommandHandler('dist', 'commands')
   contextMenuHandler = new ContextMenuHandler('dist', 'contextMenuCommands')
   modalHandler = new ModalHandler('dist', 'modals')
+  playerManager: PlayerManager = new PlayerManager(this)
 
   async deployApplicationCommand () {
     const rest = new REST({ version: '10' }).setToken(process.env.BOT_TOKEN);
@@ -56,8 +65,8 @@ class myClient extends Client {
     const contextMenuCommands = this.contextMenuHandler.cache.map((command) => command.builder.toJSON())
     try {
       const data = await rest.put(
-        Routes.applicationCommands(process.env.CLIENT_ID!),
-        { body: [...commandsSlash, ...contextMenuCommands]  },
+        Routes.applicationCommands(process.env.CLIENT_ID),
+        { body: [...commandsSlash, ...contextMenuCommands] },
       ) as any[]
       log(`reloaded ${data.length} application (/) commands.`);         
     } catch(err){
@@ -65,7 +74,6 @@ class myClient extends Client {
     }
   }
 
-  playerManager = new PlayerManager(this)
 
   checkPlayerCondition (message: MessageCommand) {
     const userChannelId = message.member.voice.channelId
@@ -163,7 +171,7 @@ class myClient extends Client {
       author: {
         name: author,
       },
-      fields: [...fields],
+      fields,
       footer: { text: `${time.hours} H ${time.minutes}  -  ${time.day}/${time.month}/${time.year}`} 
     })
       .setColor(color)

@@ -11,5 +11,6 @@ export default new Command({
     const player = this.playerManager.ensure(message.guildId)
 
     player.play(message.arguments[0], message.member)
+    
   }
 })

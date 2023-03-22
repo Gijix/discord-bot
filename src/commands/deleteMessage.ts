@@ -27,7 +27,7 @@ export default new Command({
         }
       } else {
         const num = parseInt(arr[1]);
-        await message.channel.bulkDelete(num + 1).catch((err: Error | string) => error(err,));
+        await message.channel.bulkDelete(num + 1).catch((err: Error | string) => error(err, __filename));
       }
     } catch (e) {
       error(e as string, __filename);

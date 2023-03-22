@@ -1,0 +1,34 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id String @id @default(uuid())
+  discord_id String @unique
+  gomettes UserGomettes[]
+  gometteId String
+}
+
+model Gomette {
+  id String @id @default(uuid())
+  name String @unique
+  imageUrl String
+  users UserGomettes[]
+}
+
+model UserGomettes {
+  id String @id @default(uuid())
+  user User? @relation(fields: [userId], references: [id])
+  gomette Gomette? @relation(fields: [gometteId], references: [id])
+  gometteId String 
+  userId String
+  count Int @default(1)
+}

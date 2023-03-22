@@ -5,7 +5,7 @@ export default new Command({
   description: 'get server time response',
   isSlash: true,
   async handler (interaction) {
-    interaction.reply({
+    await interaction.reply({
       ephemeral: true,
       content: `client reply with ${this.ws.ping}`
     })

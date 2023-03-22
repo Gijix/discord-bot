@@ -54,6 +54,7 @@ class MusicPlayer {
       }
     })
   }
+
   constructor (public guildId: string, public client: Client) {
     this.player.on(AudioPlayerStatus.Idle, () => {
       if (this.queue.length > 0) {
@@ -213,6 +214,8 @@ class MusicPlayer {
 export class PlayerManager extends Collection<string, MusicPlayer>{
   constructor (public client: Client) {
     super()
+
+    return this
   }
 
   ensure (guildId: string) {

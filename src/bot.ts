@@ -8,7 +8,7 @@ import { envCheck } from './envCheck.js';
 const __filename = filename(import.meta)
 const { Guilds, GuildMessages, GuildVoiceStates, MessageContent } = GatewayIntentBits
 const bot = new Client({ intents: [Guilds, GuildMessages, GuildVoiceStates, MessageContent]});
-const prefix = process.env.PREFIX!;
+const prefix = process.env.PREFIX;
 
 bot.on(Events.ClientReady, async (client) => {
   success("Orlando bot has started");
@@ -37,7 +37,7 @@ bot.on(Events.InteractionCreate, (interaction) => {
 })
 
 bot.on(Events.MessageCreate, async (message) => {
-  if (message.author.bot) return;
+  if (message.author.bot || !bot.isReady()) return;
   // bot.logMsg(message, prefix);
   bot.commandHandler.runMessage(message, bot).catch((e) => error(e, __filename))
 });

@@ -43,3 +43,5 @@ Temporary Items
 .data
 
 dist/
+
+prisma/dev.db
