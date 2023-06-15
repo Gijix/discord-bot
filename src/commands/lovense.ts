@@ -1,9 +1,9 @@
-import { Command } from "../commandHandler";
+import { Command } from "../commandHandler.js";
 
 export default new Command({
   name: 'lov',
   description: 'lov subCommand',
   handler (message) {
-    message.reply('nit implemented yet')
+    message.reply('not implemented yet')
   }
 })

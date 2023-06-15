@@ -37,11 +37,6 @@ interface Media {
 
 type MediaType = YouTube | Spotify | SoundCloud
 
-
-class Queue extends Collection<string, Media> {
-
-}
-
 class MusicPlayer {
   static hasRefreshToken: boolean = false
   static setRefreshtoken () {
@@ -165,12 +160,17 @@ class MusicPlayer {
       throw new Error('user is not in voice channel')
     }
 
+
     connection = getVoiceConnection(member.guild.id) || userConnection
     const media = (await this.getMedia(query))!;
     const audioRessource = await this.getAudioRessource(media)
 
-    connection.subscribe(this.player)
+    if (this.player.state.status !== AudioPlayerStatus.Idle ) {
+      this.queue.push({ audioRessource, streamInfo: media as YouTube })
+    }
 
+    connection.subscribe(this.player)
+    
     this.player.play(audioRessource)
   
     return this.player;

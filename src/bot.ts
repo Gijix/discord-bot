@@ -4,6 +4,7 @@ import Client from "./customClient.js";
 import { error, log, success } from './logger.js';
 import { filename } from 'dirname-filename-esm';
 import { envCheck } from './envCheck.js';
+import { generateDependencyReport } from '@discordjs/voice';
 
 const __filename = filename(import.meta)
 const { Guilds, GuildMessages, GuildVoiceStates, MessageContent } = GatewayIntentBits
@@ -23,6 +24,7 @@ bot.on(Events.ClientReady, async (client) => {
 });
 
 bot.on(Events.InteractionCreate, (interaction) => {
+  bot.currentEvent = interaction
   if (interaction.isChatInputCommand()) {
     bot.commandHandler.slashs.get(interaction.commandName)?.handler.call(bot, interaction)
   }
@@ -38,6 +40,8 @@ bot.on(Events.InteractionCreate, (interaction) => {
 
 bot.on(Events.MessageCreate, async (message) => {
   if (message.author.bot || !bot.isReady()) return;
+
+  bot.currentEvent = message
   // bot.logMsg(message, prefix);
   bot.commandHandler.runMessage(message, bot).catch((e) => error(e, __filename))
 });

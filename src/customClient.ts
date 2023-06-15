@@ -14,6 +14,7 @@ import {
     AuditLogEvent,
     REST,
     Routes,
+    Interaction,
   } from "discord.js";
 import { PrismaClient } from '@prisma/client'
 import { ContextMenuHandler } from "./contextMenuHandler.js";
@@ -31,6 +32,8 @@ class myClient<T extends boolean = boolean> extends Client<T> {
   constructor (arg: ClientOptions) {
     super(arg)
   }
+
+  currentEvent?: Message | Interaction 
 
   db = prismaClient
 
