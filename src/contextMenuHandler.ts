@@ -23,7 +23,7 @@ export class ContextMenuCommand<T extends ContextMenuCommandType = ContextMenuCo
   builder: ContextMenuCommandBuilder
   constructor (options: ContextMenuOptions<T>) {
     super(options.name, options.handler)
-    this.type = options.type as T
+    this.type = options.type
     this.builder = options.builder ?? (new ContextMenuCommandBuilder())
       .setName(options.name)
       .setType(this.type)

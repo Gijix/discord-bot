@@ -13,9 +13,10 @@ function _build() {
     .src(["src/**/*.ts"])
     .pipe(
       esbuild({
+        resolveExtensions: ['.js', '.ts', 'mjs', 'cjs'],
         sourcemap: "inline",
         format: "esm",
-        target: "node16",
+        target: "node22",
         loader: {
           ".ts": "ts",
         },
@@ -25,7 +26,7 @@ function _build() {
 }
 
 function _watch(cb) {
-  const spawn = cp.spawn("nodemon dist/main --delay 1", { shell: true });
+  const spawn = cp.spawn("nodemon dist/bot.js --delay 1", { shell: true });
 
   spawn.stdout.on("data", (data) => {
     console.log(c.white(`${data}`.trim()));

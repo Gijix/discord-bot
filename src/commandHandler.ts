@@ -51,6 +51,7 @@ type BaseHandler<S> = (
 ) => void | Promise<void>;
 
 interface BaseCommandOption<T extends string, S extends string> {
+  isActivated?: boolean
   name: NonEmptyString<T>;
   description: NonEmptyString<S>;
   permissions?: PermissionsString[];
@@ -59,12 +60,12 @@ interface BaseCommandOption<T extends string, S extends string> {
 interface ChatInteractionOption<T extends string, S extends string> extends BaseCommandOption<T, S> {
   isSlash: true;
   builder?: Builder
-  handler(this: Client<true>, param: ChatInputCommandInteraction): Promise<void> | void;
+  handler: BaseHandler<false>;
 }
 
 interface MessageOption <T extends string, S extends string> extends BaseCommandOption<T, S> {
-  isSlash?: false;
-  handler(this: Client<true>, param: MessageCommand, bot: Client): void | Promise<void>;
+  isSlash?: false | undefined;
+  handler: BaseHandler<true>;
 }
 
 function isMention (str: string) {
@@ -84,11 +85,11 @@ export class CommandHandler extends Handler<Command> {
   }
 
   get messages () {
-    return this.cache.filter(command => !command.isSlash) as Collection<string, Command<false>>
+    return this.cache.filter((command): command is Command<true> => !command.isSlash)
   }
 
   get slashs () {
-    return this.cache.filter(command => command.isSlash) as Collection<string, Command<true>>
+    return this.cache.filter((command): command is Command<true> => command.isSlash)
   }
 
   async runMessage(message: Message, bot: Client<true>) {
@@ -108,6 +109,11 @@ export class CommandHandler extends Handler<Command> {
       !(messagePrefix === prefix && this.isExtendedMessage(message)) ||
       (command?.permissions.length && !(command?.permissions.some(perm => message.member?.permissions.has(perm))))
     ) return 
+
+    if (!command.isActivated) {
+      message.reply('command not implemented yet')
+      return
+    }
 
     message.arguments = splitedMessage.filter(str => !isMention(str))
     message.command = messageCommandParsed
@@ -132,23 +138,28 @@ export class CommandHandler extends Handler<Command> {
 
 export class Command<T extends boolean = boolean, R extends string = string, U extends string = string> extends BaseComponent<BaseHandler<boolean>> {
   description: string;
+  isActivated: boolean
   isSlash: T;
   data?: Builder;
   permissions: PermissionsString[] = [];
 
   constructor(options: MessageOption<R, U> | ChatInteractionOption<R, U>) {
-    let { name, description, handler, isSlash, permissions } = options
-    super(name, handler as BaseHandler<
-      typeof isSlash extends boolean ? typeof isSlash : false
-    > )
+    let { name, description, handler, isSlash, permissions, isActivated } = options
+    super(name, handler)
+    
 
-    const value = (isSlash || false) as T;
+    const value = isSlash === undefined ? false : isSlash
 
+    if (isActivated === false) {
+      this.isActivated = isActivated
+    } else {
+      this.isActivated = true
+    }
     this.description = description;
-    this.isSlash = value;
+    this.isSlash = value as T ;
     this.permissions = permissions || [];
 
-    if (options.isSlash && options.builder) {
+    if ('builder' in options ) {
       this.data = options.builder
     }
 

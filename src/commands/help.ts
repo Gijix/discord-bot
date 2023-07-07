@@ -6,8 +6,8 @@ export default new Command({
   permissions: ["SendMessages"],
   isSlash: true,
   async handler (interaction) {
-    const SlashList = this.commandHandler.slashs.reduce((acc, com) => acc.concat("``"+com.name+"`` "+com.description+"\n" ) , '')
-    const MessageList = this.commandHandler.messages.reduce((acc, com) => acc.concat("``"+this.prefix+com.name+"`` "+com.description+"\n" ) , '')
+    const SlashList = this.commandHandler.slashs.filter((command) => command.isActivated).reduce((acc, com) => acc.concat("``"+com.name+"`` "+com.description+"\n" ) , '')
+    const MessageList = this.commandHandler.messages.filter((command) => command.isActivated).reduce((acc, com) => acc.concat("``"+this.prefix+com.name+"`` "+com.description+"\n" ) , '')
     const embed = this.createEmbed(
       "Purple",
       "Command List",

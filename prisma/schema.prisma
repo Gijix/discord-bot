@@ -10,25 +10,9 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
+model Guild {
   id String @id @default(uuid())
-  discord_id String @unique
-  gomettes UserGomettes[]
-  gometteId String
-}
-
-model Gomette {
-  id String @id @default(uuid())
-  name String @unique
-  imageUrl String
-  users UserGomettes[]
-}
-
-model UserGomettes {
-  id String @id @default(uuid())
-  user User? @relation(fields: [userId], references: [id])
-  gomette Gomette? @relation(fields: [gometteId], references: [id])
-  gometteId String 
-  userId String
-  count Int @default(1)
+  guildId String @unique
+  prefix String?
+  logCanalId String?
 }

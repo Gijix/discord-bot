@@ -8,7 +8,7 @@ export class BaseComponent<T extends Function = Function> {
     }
 
     return Object.keys(value).reduce((acc, key) => {
-      const ref = value[key as keyof typeof value]
+      const ref = value[key]
       if (['string', 'number', 'boolean'].includes(typeof ref) || ref === null) {
         acc[key] = ref
       } else if (Array.isArray(ref)) {

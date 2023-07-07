@@ -41,16 +41,21 @@ export function log(text: string, section?: string) {
   console.log(logSymbols.info, loggerPattern(text, "info", section))
 }
 
-export function error(text: string | Error, _path: string, full?: boolean) {
+export function error(value: any, _path: string, full?: boolean) {
+  if (!(typeof value === 'string' || value instanceof Error)) {
+    console.error(value)
+    return
+  }
+
   console.error(
     logSymbols.error,
     loggerPattern(
-      text instanceof Error ? text.message.split("\n")[0] : text,
+      value instanceof Error ? value.message.split("\n")[0] : value,
       "error",
       _path
     )
   )
-  if (full && text instanceof Error) console.error(text)
+  if (full && value instanceof Error) console.error(value)
 }
 
 export function warn(text: string, section?: string) {

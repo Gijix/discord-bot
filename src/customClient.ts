@@ -14,36 +14,57 @@ import {
     AuditLogEvent,
     REST,
     Routes,
-    Interaction,
+    APIEmbed,
+    TextBasedChannel,
+    Events
   } from "discord.js";
-import { PrismaClient } from '@prisma/client'
 import { ContextMenuHandler } from "./contextMenuHandler.js";
 import { ModalHandler } from "./modalHandler.js";
 import { log } from "./logger.js";
 import { filename } from 'dirname-filename-esm'
 import { error } from "./logger.js";
 import { PlayerManager } from "./musicPlayer.js";
+import { GuildDB } from "./database.js";
+import { checkLogChannel } from "./decorator/checkLogChannel.js";
 
 const __filename = filename(import.meta)
 
-export const prismaClient = new PrismaClient()
+
+const eventMethodLogMap = {
+  [Events.MessageCreate]: 'logMsg',
+  [Events.MessageUpdate]: 'logUpdateMsg',
+  [Events.MessageDelete]: 'logDeleteMsg', 
+  [Events.VoiceStateUpdate]: 'logVoiceUpdate', 
+  [Events.GuildMemberAdd]: 'logUserState', 
+  [Events.GuildMemberRemove]: 'logUserState' 
+} as const
 
 class myClient<T extends boolean = boolean> extends Client<T> {
   constructor (arg: ClientOptions) {
-    super(arg)
+    super(arg);
+    (Object.keys(eventMethodLogMap) as ((keyof typeof eventMethodLogMap)[])).forEach((key) => {
+      // @ts-ignore
+      this.on(key, (arg1, arg2) => {
+        if (arg2) {
+      // @ts-ignore
+          this[eventMethodLogMap[key]](arg1, arg2)
+        } else {
+      // @ts-ignore
+          this[eventMethodLogMap[key]](arg1)
+        }
+      })
+    })
   }
 
-  currentEvent?: Message | Interaction 
-
-  db = prismaClient
+  GuildManager = GuildDB
 
   isSetup = false;
 
-  isReady (): this is myClient<true> {
+  override isReady (): this is myClient<true> {
     return super.isReady()
   }
 
-  async login(token?: string) {
+  override async login(token?: string) {
     if (!this.isSetup) {
       throw new Error("bot isn't setup correctly")
     }
@@ -70,10 +91,10 @@ class myClient<T extends boolean = boolean> extends Client<T> {
       const data = await rest.put(
         Routes.applicationCommands(process.env.CLIENT_ID),
         { body: [...commandsSlash, ...contextMenuCommands] },
-      ) as any[]
-      log(`reloaded ${data.length} application (/) commands.`);         
+      )
+      log(`reloaded ${Array.isArray(data) ? data.length : 1 } application (/) commands.`);         
     } catch(err){
-      error(err as string, __filename)
+      error(err, __filename)
     }
   }
 
@@ -98,11 +119,7 @@ class myClient<T extends boolean = boolean> extends Client<T> {
     return 
   }
 
-  CONFIG_CHANNEL_ID = null
-  LOG_CHANNEL_ID = "871760169770582066"
-  ADMIN_ID = "247100615489093632";
-
-  prefix = process.env.PREFIX!
+  prefix: string = process.env.PREFIX || '$'
 
   join (member: GuildMember) {
     const channelId = member.voice.channelId
@@ -116,28 +133,12 @@ class myClient<T extends boolean = boolean> extends Client<T> {
     })
   }
 
-  logChannelMsg(message: Message): TextChannel {
-    return message.guild!.channels.cache.find(
-      (chan) => chan.id === "871760169770582066"
-    ) as TextChannel;
-  }
-
-  logChannelVoice(arg: VoiceState | Message): TextChannel {
-    return arg.guild!.channels.cache.find(
-      (chan) => chan.id === "872055513871958046"
-    ) as TextChannel;
-  }
-
-  logChannelUserState(member: GuildMember): TextChannel {
-    return member.guild.channels.cache.get("872907085002702859") as TextChannel;
-  }
-
   /**
    * Check if the user who wrote the command has the perm for perfoming it
    */
   checkPerm(member: GuildMember, permList: PermissionsString[]): boolean {
     return (
-      member.permissions.has(permList) || member.user.id === this.ADMIN_ID
+      member.permissions.has(permList) || member.user.id === process.env.ADMIN_ID
     );
   }
 
@@ -181,16 +182,29 @@ class myClient<T extends boolean = boolean> extends Client<T> {
     return embed;
   }
 
+  async getGuildLogChannel (guildId: string) {
+    const guild = await this.GuildManager.ensure(guildId)
+    const id = guild.guildInfo.logCanalId
+    if (id) {
+      const guild = await this.guilds.fetch(guildId)
+      return guild.channels.cache.get(id) as TextBasedChannel
+    }
+  }
+
+  async log (data: APIEmbed, guildId: string) {
+    const logChannel = await this.getGuildLogChannel(guildId)
+
+    if (logChannel) {
+      await logChannel.send({ embeds: [data]})
+    }
+  }
+
   /**
    * Display all "send message" event on selected channel
    */
-  async logMsg(message: Message, prefix: string) {
-    if ([
-      this.logChannelMsg(message).id, 
-      this.logChannelVoice(message).id, 
-      this.logChannelUserState(message.member!).id
-    ].includes(message.channel.id)) return;
-  
+  // @ts-ignore
+  @checkLogChannel
+  async logMsg(message: Message<true>, prefix: string) {  
     if (message.author.bot) return;
 
     const command = message.content.startsWith(prefix);
@@ -204,11 +218,13 @@ class myClient<T extends boolean = boolean> extends Client<T> {
       { name: "Message", value: message.content, inline: true },
       { name: "Channel", value: (message.channel as TextChannel).name, inline: true }
     );
-
-    await this.logChannelMsg(message).send({ embeds: [embed.data]});
+    
+    this.log(embed.data, message.guildId)
   }
 
-  async logDeleteMsg(message: Message) {
+  // @ts-ignore
+  @checkLogChannel
+  async logDeleteMsg(message: Message<true>) {
     try {
       const fetchedLog = await message.guild!.fetchAuditLogs({
         type: AuditLogEvent.MessageDelete,
@@ -225,13 +241,16 @@ class myClient<T extends boolean = boolean> extends Client<T> {
         { name: "Channel", value: (message.channel as TextChannel).name, inline: true },
         { name: `deleted by`, value: `<@${executer.id}>`, inline: false }
       );
-      this.logChannelMsg(message).send({ embeds: [embed.data]});
+
+      this.log(embed.data, message.guildId)
     } catch (e) {
       error(e as string, __filename);
     }
   }
 
-  async logUpdateMsg(oldMessage: Message, newMessage: Message) {
+  // @ts-ignore
+  @checkLogChannel
+  async logUpdateMsg(oldMessage: Message<true>, newMessage: Message<true>) {
     const embed = this.createEmbed(
       "Blue",
       "Message Updated",
@@ -241,9 +260,12 @@ class myClient<T extends boolean = boolean> extends Client<T> {
       { name: `New Message`, value: newMessage.content, inline: true },
       { name: "Channel", value: (newMessage.channel as TextChannel).name, inline: false }
     );
-    await this.logChannelMsg(newMessage).send({ embeds: [embed]});
+
+    this.log(embed.data, newMessage.guildId)
   }
 
+  // @ts-ignore
+  @checkLogChannel
   async logUserState(member: GuildMember) {
     const message = await member.guild.members.fetch(member)
       ? "User join guild"
@@ -255,9 +277,12 @@ class myClient<T extends boolean = boolean> extends Client<T> {
       { name: "User", value: `<@${member.id}>`, inline: true },
       { name: "As", value: member.user.username, inline: true }
     );
-    await this.logChannelUserState(member).send({ embeds: [embed.data]});
+    
+    this.log(embed.data, member.guild.id)
   }
 
+  // @ts-ignore
+  @checkLogChannel
   async logVoiceUpdate(oldstate: VoiceState, newState: VoiceState) {
     let embed;
     if (oldstate.channelId) {
@@ -288,17 +313,8 @@ class myClient<T extends boolean = boolean> extends Client<T> {
         { name: "Channel", value: newState.channel!.name, inline: true }
       );
     }
-
-    await this.logChannelVoice(oldstate).send({ embeds: [embed.data]});
-  }
-  /**
-   *
-   * @param {Message} message
-   */
-  loadResponse(message: Message) {
-    const channelConfig = message.guild!.channels.cache.find(
-      (chan) => chan.id === this.CONFIG_CHANNEL_ID
-    );
+    
+    this.log(embed.data, oldstate.guild.id)
   }
 }
 

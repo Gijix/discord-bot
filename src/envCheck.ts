@@ -1,7 +1,7 @@
 import 'dotenv/config'
 import { log } from './logger.js'
 
-export const envKeys = ['BOT_TOKEN', 'PREFIX'] as const
+export const envKeys = ['BOT_TOKEN', 'PREFIX', 'ADMIN_ID', 'CLIENT_ID'] as const
 
 export const envCheck = () => {
   envKeys.forEach((key) => {

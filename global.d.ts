@@ -3,5 +3,6 @@ declare namespace NodeJS {
     BOT_TOKEN: string,
     PREFIX: string,
     CLIENT_ID: string
+    ADMIN_ID: string
   }
 }

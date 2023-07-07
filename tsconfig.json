@@ -9,6 +9,9 @@
     "strict": true,
     "esModuleInterop": true,
     "moduleResolution": "Node",
+    "moduleDetection": "auto",
+    "allowSyntheticDefaultImports": true,
+    "experimentalDecorators": true,
     "sourceMap": true,
     "forceConsistentCasingInFileNames": true,
     "types": [
