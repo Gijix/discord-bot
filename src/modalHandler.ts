@@ -11,7 +11,7 @@ import { BaseComponent } from "./baseComponent.js";
 import { Handler } from "./baseHandler.js";
 import Client from './customClient.js'
 
-type ComponentOptions = {[key: string]: {
+type ComponentOptions = Record<string, {
   style: TextInputStyle
   label: string;
   minLength?: number;
@@ -19,7 +19,7 @@ type ComponentOptions = {[key: string]: {
   required?: boolean;
   value?: string;
   placeholder?: string;
-}}
+}>
 
 type ModalHandlerFunction<T extends ComponentOptions> = (this: Client, data:{[K in keyof T]: string}, interaction: ModalSubmitInteraction) => void | Promise<void>
 
@@ -42,7 +42,7 @@ export class Modal<T extends ComponentOptions = ComponentOptions> extends BaseCo
 
     Object.keys(options.components).forEach((key) => {
       const actionRow = new ActionRowBuilder<TextInputBuilder>()
-      actionRow.addComponents(new TextInputBuilder(options.components[key]).setCustomId(key))
+      actionRow.addComponents(new TextInputBuilder(options.components[key]).setCustomId(key as string))
       modal.addComponents(actionRow)
     })
 

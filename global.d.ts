@@ -6,3 +6,7 @@ declare namespace NodeJS {
     ADMIN_ID: string
   }
 }
+
+declare interface ObjectConstructor {
+  keys<T> (object: T): (keyof T)[]
+}

@@ -2,15 +2,12 @@ import {
   Message,
   ChatInputCommandInteraction,
   PermissionsString,
-  SlashCommandBuilder,
-  Collection,
   MessageMentions,
   GuildMember,
   MessagePayload,
   MessageCreateOptions,
-  SharedSlashCommandOptions,
-  SharedNameAndDescription,
-  RESTPostAPIChatInputApplicationCommandsJSONBody
+  RESTPostAPIChatInputApplicationCommandsJSONBody,
+  APIApplicationCommandOption
 } from "discord.js";
 import Client from "./customClient.js";
 import { Handler } from "./baseHandler.js";
@@ -28,10 +25,6 @@ type DeferableMessage = Message<true> & {
   deferDelete (delay?: number): Promise<Message<true>> 
 }
 
-interface Builder extends Partial<SharedSlashCommandOptions>, SharedNameAndDescription {
-  toJSON (): RESTPostAPIChatInputApplicationCommandsJSONBody
-}
-
 async function deferDelete (this: DeferableMessage, delay = 0): Promise<Message<true>> {
   await setTimeout(delay);
   return await this.delete();
@@ -45,27 +38,28 @@ export interface MessageCommand extends DeferableMessage {
   replyDefer (arg: string | MessagePayload | MessageCreateOptions): Promise<DeferableMessage>
 };
 
-type BaseHandler<S> = (
+type BaseHandler<S, T = any> = (
   this: Client<true>,
   param: S extends true ? MessageCommand : ChatInputCommandInteraction,
+  // options: S extends true ? undefined : T
 ) => void | Promise<void>;
 
-interface BaseCommandOption<T extends string, S extends string> {
+interface BaseCommandOption<T extends string, S extends string, R extends boolean, U extends boolean> {
   isActivated?: boolean
-  name: NonEmptyString<T>;
+  name: U extends true ? Lowercase<NonEmptyString<T>> : NonEmptyString<T>;
   description: NonEmptyString<S>;
   permissions?: PermissionsString[];
+  handler: BaseHandler<R>
 }
 
-interface ChatInteractionOption<T extends string, S extends string> extends BaseCommandOption<T, S> {
+interface ChatInteractionOption<T extends string, S extends string, R extends APIApplicationCommandOption = APIApplicationCommandOption> extends BaseCommandOption<T, S, false, true> {
   isSlash: true;
-  builder?: Builder
   handler: BaseHandler<false>;
+  options?: R[]
 }
 
-interface MessageOption <T extends string, S extends string> extends BaseCommandOption<T, S> {
-  isSlash?: false | undefined;
-  handler: BaseHandler<true>;
+interface MessageOption <T extends string, S extends string> extends BaseCommandOption<T, S, true, false> {
+  isSlash?: false;
 }
 
 function isMention (str: string) {
@@ -140,7 +134,7 @@ export class Command<T extends boolean = boolean, R extends string = string, U e
   description: string;
   isActivated: boolean
   isSlash: T;
-  data?: Builder;
+  data?: RESTPostAPIChatInputApplicationCommandsJSONBody
   permissions: PermissionsString[] = [];
 
   constructor(options: MessageOption<R, U> | ChatInteractionOption<R, U>) {
@@ -158,15 +152,16 @@ export class Command<T extends boolean = boolean, R extends string = string, U e
     this.description = description;
     this.isSlash = value as T ;
     this.permissions = permissions || [];
-
-    if ('builder' in options ) {
-      this.data = options.builder
+    if (isSlash) {
+      this.data = { name, description }
+      if ('options' in options ) {
+        this.data.options = options.options
+      }
     }
-
-    if (value === true) {
-      this.data = (this.data || new SlashCommandBuilder())
-        .setName(name)
-        .setDescription(description)
-    }
+    
   }
 }
+
+
+
+

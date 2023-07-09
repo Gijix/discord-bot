@@ -1,4 +1,4 @@
-import { GuildMember, SlashCommandBuilder } from "discord.js";
+import { ApplicationCommandOptionType, GuildMember } from "discord.js";
 import { getVoiceConnection, NoSubscriberBehavior, createAudioPlayer, createAudioResource, AudioPlayerStatus, StreamType } from "@discordjs/voice";
 import { Command } from "../commandHandler.js";
 import { createReadStream } from "fs";
@@ -21,20 +21,19 @@ export default new Command({
   name: 'so',
   description: 'use soundboard',
   isSlash: true,
-  builder:  new SlashCommandBuilder().addStringOption(builder => {
-    builder.setName('sound')
-    builder.setDescription('the soundboard you want')
-    builder.addChoices(...soundList)
-    builder.setRequired(true)
-
-    return builder
-  }) ,
+  options: [
+    {
+      type: ApplicationCommandOptionType.String,
+      description: 'the soundboard you want',
+      name: 'sound',
+      choices: soundList,
+      required: true
+    }
+  ],
   handler (interaction) {
     console.log('getting interaction')
     const member = interaction.member as GuildMember
     if (!member.voice.channel) return;
-
-    console.log('member in voice')
 
     let connection = getVoiceConnection(interaction.guildId!)!
 
@@ -46,7 +45,6 @@ export default new Command({
         noSubscriber: NoSubscriberBehavior.Pause
       }
     })
-  
     connection.subscribe(player)!
 
     const audioRessourse = createAudioResource(createReadStream(path.join(process.cwd(), "sounds", "naru", interaction.options.getString('sound', true))),
@@ -54,7 +52,6 @@ export default new Command({
       inlineVolume: true,
       inputType: StreamType.OggOpus
     })
-    
     player.play(audioRessourse)
     player.on(AudioPlayerStatus.Idle ,() => {
         connection.destroy()

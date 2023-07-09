@@ -13,7 +13,7 @@ function _build() {
     .src(["src/**/*.ts"])
     .pipe(
       esbuild({
-        resolveExtensions: ['.js', '.ts', 'mjs', 'cjs'],
+        resolveExtensions: ['.js', '.ts', '.mjs', '.cjs'],
         sourcemap: "inline",
         format: "esm",
         target: "node22",

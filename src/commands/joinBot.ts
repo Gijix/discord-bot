@@ -7,9 +7,8 @@ export default new Command({
   description: "Make the bot join current voice channel",
   permissions: ["Administrator"],
   async handler (message) {
-    let arg = message.content.split(" ").slice(1).join(" ");
     const guild = message.guild!;
-    const channelJoin = guild.channels.cache.find(chan => chan.name === arg)
+    const channelJoin = guild.channels.cache.find(chan => chan.name === message.arguments[0])
     channelJoin && joinVoiceChannel({
       channelId:channelJoin.id,
       guildId:guild.id,

@@ -1,4 +1,4 @@
-import { joinVoiceChannel } from "@discordjs/voice";
+import { getVoiceConnection, joinVoiceChannel } from "@discordjs/voice";
 import { CommandHandler, MessageCommand } from "./commandHandler.js";
 import {
     Client,
@@ -36,13 +36,13 @@ const eventMethodLogMap = {
   [Events.MessageDelete]: 'logDeleteMsg', 
   [Events.VoiceStateUpdate]: 'logVoiceUpdate', 
   [Events.GuildMemberAdd]: 'logUserState', 
-  [Events.GuildMemberRemove]: 'logUserState' 
+  [Events.GuildMemberRemove]: 'logUserState'
 } as const
 
 class myClient<T extends boolean = boolean> extends Client<T> {
   constructor (arg: ClientOptions) {
     super(arg);
-    (Object.keys(eventMethodLogMap) as ((keyof typeof eventMethodLogMap)[])).forEach((key) => {
+    (Object.keys(eventMethodLogMap)).forEach((key) => {
       // @ts-ignore
       this.on(key, (arg1, arg2) => {
         if (arg2) {
@@ -85,7 +85,7 @@ class myClient<T extends boolean = boolean> extends Client<T> {
 
   async deployApplicationCommand () {
     const rest = new REST({ version: '10' }).setToken(process.env.BOT_TOKEN);
-    const commandsSlash = this.commandHandler.slashs.map((command) => command.data?.toJSON())
+    const commandsSlash = this.commandHandler.slashs.map(command => command.data)
     const contextMenuCommands = this.contextMenuHandler.cache.map((command) => command.builder.toJSON())
     try {
       const data = await rest.put(
@@ -98,30 +98,14 @@ class myClient<T extends boolean = boolean> extends Client<T> {
     }
   }
 
-
-  checkPlayerCondition (message: MessageCommand) {
-    const userChannelId = message.member.voice.channelId
-    const botChannelId = message.guild.members.me!.voice.channelId
-    const isOnvoice = userChannelId !== null;
-    const botOnVoice = botChannelId !== null
-    if (!isOnvoice) {
-      message.reply('join a voice channel for playing song')
-
-      return
-    }
-
-    if (botOnVoice &&  userChannelId !== botChannelId) {
-      message.reply('bot already in a voice channel')
-
-      return
-    }
-
-    return 
-  }
-
   prefix: string = process.env.PREFIX || '$'
 
-  join (member: GuildMember) {
+  join (member: GuildMember, force?: boolean) {
+    if (!force) {
+      const voiceConnection = getVoiceConnection(member.guild.id)
+      if(voiceConnection) return
+    }
+
     const channelId = member.voice.channelId
 
     if (!channelId) return

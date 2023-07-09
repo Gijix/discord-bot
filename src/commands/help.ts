@@ -11,7 +11,7 @@ export default new Command({
     const embed = this.createEmbed(
       "Purple",
       "Command List",
-      this.user!.username,
+      this.user.username,
       {
         name: "Messages",
         value: MessageList,

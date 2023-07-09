@@ -3,11 +3,12 @@ import logSymbols from 'log-symbols';
 import c from 'ansi-colors'
 
 export const logLevelColors = {
-  warn: "#ffa600" as HexString,
-  error: "#ff0000" as HexString ,
-  info: "#00ffff" as HexString,
-  success: "#00ff00" as HexString,
-}
+  warn: "#ffa600",
+  error: "#ff0000",
+  info: "#00ffff",
+  success: "#00ff00",
+  debug: "#f4dc04"
+} satisfies Record<string,HexString>
 
 type HexString = `#${string}`
 
@@ -43,7 +44,7 @@ export function log(text: string, section?: string) {
 
 export function error(value: any, _path: string, full?: boolean) {
   if (!(typeof value === 'string' || value instanceof Error)) {
-    console.error(value)
+    console.error(logSymbols.error, value)
     return
   }
 
@@ -73,4 +74,8 @@ export function createLogger(section: string) {
     warn: (text: string) => warn(text, section),
     success: (text: string) => success(text, section),
   }
+}
+
+export function debug (text: string, section?: string) {
+  console.log(logSymbols.info, loggerPattern(text, "debug", section))
 }
