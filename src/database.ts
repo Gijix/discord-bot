@@ -25,7 +25,7 @@ export class GuildDB {
   static async ensure (guildId: string) {
     const guild = await this.getGuild(guildId)
     if (!guild) {
-      return new this((await this.create(guildId)))
+      return new this(await this.create(guildId))
     }
     return new this(guild)
   }

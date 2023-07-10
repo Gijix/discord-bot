@@ -1,4 +1,4 @@
-export class BaseComponent<T extends Function = Function> {
+export abstract class BaseComponent<T extends Function = Function> {
   category?: string
   toJSON (object?: any) {
     const value = object || this

@@ -4,6 +4,7 @@ declare namespace NodeJS {
     PREFIX: string,
     CLIENT_ID: string
     ADMIN_ID: string
+    OUTDIR: string
   }
 }
 

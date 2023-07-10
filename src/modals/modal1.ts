@@ -1,5 +1,5 @@
 import { TextInputStyle } from "discord.js";
-import { Modal } from "../modalHandler.js";
+import { Modal } from "../handlers/modalHandler.js";
 
 export default new Modal({
   components:{

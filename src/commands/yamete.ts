@@ -1,6 +1,6 @@
 import { createReadStream } from 'fs';
 import path from "path";
-import { Command } from "../commandHandler.js";
+import { Command } from "../handlers/commandHandler.js";
 import { 
   createAudioResource, 
   createAudioPlayer, 

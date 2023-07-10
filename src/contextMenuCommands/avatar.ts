@@ -1,5 +1,5 @@
 import { ApplicationCommandType, EmbedBuilder } from "discord.js";
-import { ContextMenuCommand } from "../contextMenuHandler.js";
+import { ContextMenuCommand } from "../handlers/contextMenuHandler.js";
 
 export default new ContextMenuCommand({
   type: ApplicationCommandType.User,

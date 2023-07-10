@@ -1,4 +1,4 @@
-import { Command } from "../../commandHandler.js";
+import { Command } from "../../handlers/commandHandler.js";
 import { filename } from 'dirname-filename-esm';
 
 

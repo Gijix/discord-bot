@@ -9,10 +9,10 @@ import {
   RESTPostAPIChatInputApplicationCommandsJSONBody,
   APIApplicationCommandOption
 } from "discord.js";
-import Client from "./customClient.js";
+import Client from "../customClient.js";
 import { Handler } from "./baseHandler.js";
-import { BaseComponent } from "./baseComponent.js";
-import { error } from "./logger.js";
+import { BaseComponent } from "../baseComponent.js";
+import { error } from "../logger.js";
 import { filename } from 'dirname-filename-esm';
 import { setTimeout } from "timers/promises";
 

@@ -1,4 +1,4 @@
-import { Command, MessageCommand } from "../../commandHandler.js";
+import { Command, MessageCommand } from "../../handlers/commandHandler.js";
 
 export default new Command({
   name: 'seek',

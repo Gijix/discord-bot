@@ -1,5 +1,5 @@
 import { getVoiceConnection, joinVoiceChannel } from "@discordjs/voice";
-import { CommandHandler, MessageCommand } from "./commandHandler.js";
+import { CommandHandler, MessageCommand } from "./handlers/commandHandler.js";
 import {
     Client,
     Message,
@@ -18,14 +18,16 @@ import {
     TextBasedChannel,
     Events
   } from "discord.js";
-import { ContextMenuHandler } from "./contextMenuHandler.js";
-import { ModalHandler } from "./modalHandler.js";
+import { ContextMenuHandler } from "./handlers/contextMenuHandler.js";
+import { ModalHandler } from "./handlers/modalHandler.js";
 import { log } from "./logger.js";
 import { filename } from 'dirname-filename-esm'
 import { error } from "./logger.js";
 import { PlayerManager } from "./musicPlayer.js";
 import { GuildDB } from "./database.js";
 import { checkLogChannel } from "./decorator/checkLogChannel.js";
+import { Handler } from "./handlers/baseHandler.js";
+import { ComponentHandler } from "./handlers/buttonHandler.js";
 
 const __filename = filename(import.meta)
 
@@ -78,9 +80,11 @@ class myClient<T extends boolean = boolean> extends Client<T> {
     this.isSetup = true
   }
 
-  commandHandler = new CommandHandler('dist', 'commands')
-  contextMenuHandler = new ContextMenuHandler('dist', 'contextMenuCommands')
-  modalHandler = new ModalHandler('dist', 'modals')
+  commandHandler = new CommandHandler('commands')
+  contextMenuHandler = new ContextMenuHandler('contextMenuCommands')
+  buttonHandler = new ComponentHandler('componentRows')
+  modalHandler = new ModalHandler('modals')
+
   playerManager: PlayerManager = new PlayerManager(this)
 
   async deployApplicationCommand () {

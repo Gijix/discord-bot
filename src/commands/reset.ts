@@ -1,4 +1,4 @@
-import { Command } from "../commandHandler.js";
+import { Command } from "../handlers/commandHandler.js";
 import { setTimeout } from "timers/promises";
 
 export default new Command({

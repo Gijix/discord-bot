@@ -6,10 +6,15 @@ import {
   ModalBuilder, 
   ActionRowBuilder,
   TextInputStyle,
+  ModalActionRowComponentBuilder,
 } from "discord.js";
-import { BaseComponent } from "./baseComponent.js";
+import { BaseComponent } from "../baseComponent.js";
 import { Handler } from "./baseHandler.js";
-import Client from './customClient.js'
+import Client from '../customClient.js'
+import { error } from "../logger.js";
+import { filename } from 'dirname-filename-esm';
+
+const __filename = filename(import.meta)
 
 type ComponentOptions = Record<string, {
   style: TextInputStyle
@@ -31,7 +36,7 @@ interface ModalOptions<T extends ComponentOptions> {
 }
 
 export class Modal<T extends ComponentOptions = ComponentOptions> extends BaseComponent<ModalHandlerFunction<T>> {
-  modal: ModalBuilder
+  builder: ModalBuilder
   id: string
   constructor(options: ModalOptions<T>) {
     super(options.name, options.handler)
@@ -41,27 +46,33 @@ export class Modal<T extends ComponentOptions = ComponentOptions> extends BaseCo
     })
 
     Object.keys(options.components).forEach((key) => {
-      const actionRow = new ActionRowBuilder<TextInputBuilder>()
+      const actionRow = new ActionRowBuilder<ModalActionRowComponentBuilder>()
       actionRow.addComponents(new TextInputBuilder(options.components[key]).setCustomId(key as string))
       modal.addComponents(actionRow)
     })
 
     this.id = options.id
-    this.modal = modal
+    this.builder = modal
   }
 
-  async trigger (interaction: CommandInteraction | MessageComponentInteraction ) {
-    await interaction.showModal(this.modal)
+  async waitSubmit (interaction: CommandInteraction, time = 15_000) {
+    return await interaction.awaitModalSubmit({ filter: (modalSubmit) => modalSubmit.id === this.id, time })
   }
 }
 
 export class ModalHandler extends Handler<Modal> {
-  onSubmit (interaction: ModalSubmitInteraction, bot: Client) {
+  async onSubmit (interaction: ModalSubmitInteraction, bot: Client) {
     const fieldList: Record<string, string> = {}
     interaction.fields.fields.forEach((textInput) => {
       fieldList[textInput.customId] = textInput.value 
     })
 
-    this.cache.get(interaction.customId)!.handler.call(bot, fieldList, interaction)
+    const modal = this.cache.get(interaction.customId)
+    
+    if(!modal) {
+      return error(`modal with custom id ${interaction.customId} doesn'exist`, __filename)
+    }
+
+    await modal.handler.call(bot, fieldList, interaction)
   }
 }

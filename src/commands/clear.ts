@@ -1,5 +1,5 @@
 import { Message, Collection } from "discord.js";
-import { Command } from "../commandHandler.js";
+import { Command } from "../handlers/commandHandler.js";
 import { filename } from 'dirname-filename-esm'
 import { error } from "../logger.js";
 

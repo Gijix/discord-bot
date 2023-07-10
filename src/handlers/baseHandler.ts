@@ -1,15 +1,15 @@
 import { Collection } from "discord.js";
 import path from "path";
 import { readdir } from "fs/promises";
-import { BaseComponent } from "./baseComponent.js";
-import { log } from "./logger.js";
+import { BaseComponent } from "../baseComponent.js";
+import { log } from "../logger.js";
 
-export class Handler<S extends BaseComponent> {
+export abstract class Handler<S extends BaseComponent> {
   path: string
   cache = new Collection<string, S>()
 
   constructor (...args: string[]) {
-    this.path = path.join(process.cwd(), ...args)
+    this.path = path.join(process.cwd(), process.env.OUTDIR, ...args)
   }
 
   async setup () {

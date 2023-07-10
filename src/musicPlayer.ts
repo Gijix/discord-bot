@@ -23,7 +23,7 @@ import {
   VoiceConnection,
   NoSubscriberBehavior
 } from "@discordjs/voice";
-import { MessageCommand } from "./commandHandler.js";
+import { MessageCommand } from "./handlers/commandHandler.js";
 import { log, error } from "./logger.js";
 import { filename } from "dirname-filename-esm";
 import { Collection, GuildMember } from "discord.js";

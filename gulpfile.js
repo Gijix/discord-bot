@@ -3,6 +3,7 @@ import esbuild from "gulp-esbuild";
 import cp from "child_process";
 import c from "ansi-colors";
 import { deleteAsync } from "del";
+import 'dotenv/config'
 
 function _cleanDist() {
   return deleteAsync(["dist/**/*"]);
@@ -22,7 +23,7 @@ function _build() {
         },
       })
     )
-    .pipe(gulp.dest("dist"));
+    .pipe(gulp.dest(process.env.OUTDIR || 'dist'));
 }
 
 function _watch(cb) {

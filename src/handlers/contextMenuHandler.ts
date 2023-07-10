@@ -1,11 +1,12 @@
 import { 
   UserContextMenuCommandInteraction,
   MessageContextMenuCommandInteraction,
+  ContextMenuCommandInteraction,
   ContextMenuCommandBuilder,
   ContextMenuCommandType
  } from "discord.js";
-import Client from "./customClient.js";
-import { BaseComponent } from "./baseComponent.js";
+import Client from "../customClient.js";
+import { BaseComponent } from "../baseComponent.js";
 import { Handler } from "./baseHandler.js";
 
 type CurrentInteraction<T> = T extends 2 ? UserContextMenuCommandInteraction : MessageContextMenuCommandInteraction 

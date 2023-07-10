@@ -1,6 +1,6 @@
 import { ApplicationCommandOptionType, GuildMember } from "discord.js";
 import { getVoiceConnection, NoSubscriberBehavior, createAudioPlayer, createAudioResource, AudioPlayerStatus, StreamType } from "@discordjs/voice";
-import { Command } from "../commandHandler.js";
+import { Command } from "../handlers/commandHandler.js";
 import { createReadStream } from "fs";
 import { readdir } from "fs/promises";
 import path from "path";

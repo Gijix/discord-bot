@@ -1,5 +1,5 @@
 import { ChannelType } from "discord.js";
-import { Command } from "../commandHandler.js";
+import { Command } from "../handlers/commandHandler.js";
 import { error } from "../logger.js";
 import { filename } from 'dirname-filename-esm'
 

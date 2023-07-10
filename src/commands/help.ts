@@ -1,4 +1,4 @@
-import { Command } from "../commandHandler.js";
+import { Command } from "../handlers/commandHandler.js";
 
 export default new Command({
   name: "help",
