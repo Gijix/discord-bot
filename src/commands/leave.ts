@@ -5,7 +5,7 @@ export default new Command({
   name: "leave",
   description: "Make the bot leave the current voice channel",
   permissions: ['Administrator'],
-  handler (message) {
+  async handler (message) {
     const connection = getVoiceConnection(message.guild!.id)
     connection && connection.destroy()
   }

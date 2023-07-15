@@ -1,7 +1,7 @@
 import { ButtonBuilder, ButtonStyle, ActionRowBuilder, ChatInputCommandInteraction, MessageActionRowComponentBuilder } from 'discord.js'
-import myClient from './customClient'
+import Bot from './bot'
 
-async function createTicketToolComponent (this: myClient<true> ,id: string, interaction: ChatInputCommandInteraction, description: string, img?: string) {
+export async function createTicketToolComponent (this: Bot<true> ,id: string, interaction: ChatInputCommandInteraction, description: string, img?: string) {
   const row = new ActionRowBuilder<MessageActionRowComponentBuilder>()
   const button = new ButtonBuilder()
   button.setCustomId(id).setStyle(ButtonStyle.Primary).setLabel('open a new ticket')

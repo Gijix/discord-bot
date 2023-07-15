@@ -1,6 +1,5 @@
 import { 
   CommandInteraction, 
-  MessageComponentInteraction, 
   ModalSubmitInteraction, 
   TextInputBuilder, 
   ModalBuilder, 
@@ -9,8 +8,8 @@ import {
   ModalActionRowComponentBuilder,
 } from "discord.js";
 import { BaseComponent } from "../baseComponent.js";
-import { Handler } from "./baseHandler.js";
-import Client from '../customClient.js'
+import { Handler } from "./AbstractHandler.js";
+import Bot from '../bot.js'
 import { error } from "../logger.js";
 import { filename } from 'dirname-filename-esm';
 
@@ -26,7 +25,7 @@ type ComponentOptions = Record<string, {
   placeholder?: string;
 }>
 
-type ModalHandlerFunction<T extends ComponentOptions> = (this: Client, data:{[K in keyof T]: string}, interaction: ModalSubmitInteraction) => void | Promise<void>
+type ModalHandlerFunction<T extends ComponentOptions> = (this: Bot, data:{[K in keyof T]: string}, interaction: ModalSubmitInteraction) => Promise<void>
 
 interface ModalOptions<T extends ComponentOptions> {
   name: string
@@ -61,7 +60,7 @@ export class Modal<T extends ComponentOptions = ComponentOptions> extends BaseCo
 }
 
 export class ModalHandler extends Handler<Modal> {
-  async onSubmit (interaction: ModalSubmitInteraction, bot: Client) {
+  async onSubmit (interaction: ModalSubmitInteraction, bot: Bot) {
     const fieldList: Record<string, string> = {}
     interaction.fields.fields.forEach((textInput) => {
       fieldList[textInput.customId] = textInput.value 

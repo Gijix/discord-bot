@@ -9,7 +9,7 @@ export abstract class Handler<S extends BaseComponent> {
   cache = new Collection<string, S>()
 
   constructor (...args: string[]) {
-    this.path = path.join(process.cwd(), process.env.OUTDIR, ...args)
+    this.path = path.join(process.cwd(),process.env.OUTDIR, ...args)
   }
 
   async setup () {
@@ -20,7 +20,7 @@ export abstract class Handler<S extends BaseComponent> {
 
   async load (...paths: string[]): Promise<Collection<string, S>> {
     const filenames = await readdir(path.join(this.path, ...paths), { withFileTypes: true });
-    let preCache = new Collection<string, S>()
+    let preCache = new Collection<string, S>();
 
     for await (const filename of filenames) {
       const filepath = path.join(this.path,...paths, filename.name)

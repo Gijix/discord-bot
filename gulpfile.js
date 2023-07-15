@@ -27,7 +27,7 @@ function _build() {
 }
 
 function _watch(cb) {
-  const spawn = cp.spawn("nodemon dist/bot.js --delay 1", { shell: true });
+  const spawn = cp.spawn("nodemon dist/index.js --delay 1", { shell: true });
 
   spawn.stdout.on("data", (data) => {
     console.log(c.white(`${data}`.trim()));

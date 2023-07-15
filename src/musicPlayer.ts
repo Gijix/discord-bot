@@ -13,7 +13,7 @@ import play, {
   SpotifyTrack,
   YouTubeStream
 } from "play-dl";
-import Client from "./customClient.js";
+import Bot from "./bot.js";
 import { 
   createAudioPlayer,
   getVoiceConnection,
@@ -50,7 +50,7 @@ class MusicPlayer {
     })
   }
 
-  constructor (public guildId: string, public client: Client) {
+  constructor (public guildId: string, public client: Bot) {
     this.player.on(AudioPlayerStatus.Idle, () => {
       if (this.queue.length > 0) {
         this.playNext();
@@ -212,7 +212,7 @@ class MusicPlayer {
 }
 
 export class PlayerManager extends Collection<string, MusicPlayer>{
-  constructor (public client: Client) {
+  constructor (public client: Bot) {
     super()
 
     return this

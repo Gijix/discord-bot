@@ -9,8 +9,8 @@ import {
   RESTPostAPIChatInputApplicationCommandsJSONBody,
   APIApplicationCommandOption
 } from "discord.js";
-import Client from "../customClient.js";
-import { Handler } from "./baseHandler.js";
+import Bot from "../bot.js";
+import { Handler } from "./AbstractHandler.js";
 import { BaseComponent } from "../baseComponent.js";
 import { error } from "../logger.js";
 import { filename } from 'dirname-filename-esm';
@@ -39,10 +39,10 @@ export interface MessageCommand extends DeferableMessage {
 };
 
 type BaseHandler<S, T = any> = (
-  this: Client<true>,
-  param: S extends true ? MessageCommand : ChatInputCommandInteraction,
+  this: Bot<true>,
+  param: S extends true ? MessageCommand : ChatInputCommandInteraction<'raw' | 'cached'>,
   // options: S extends true ? undefined : T
-) => void | Promise<void>;
+) => Promise<void> ;
 
 interface BaseCommandOption<T extends string, S extends string, R extends boolean, U extends boolean> {
   isActivated?: boolean
@@ -86,7 +86,7 @@ export class CommandHandler extends Handler<Command> {
     return this.cache.filter((command): command is Command<true> => command.isSlash)
   }
 
-  async runMessage(message: Message, bot: Client<true>) {
+  async runMessage(message: Message, bot: Bot<true>) {
     const prefix = process.env.PREFIX!;
     const splitedMessage = message.content.split(" ").filter((str) => str);
     const messageCommand = splitedMessage.shift()!;

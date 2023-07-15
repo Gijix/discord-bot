@@ -2,7 +2,7 @@
   "name": "discord-bot",
   "version": "0.8.0",
   "description": "This is a discord bot",
-  "main": "dist/bot.js",
+  "main": "dist/index.js",
   "type": "module",
   "dependencies": {
     "@discordjs/opus": "^0.9.0",
@@ -45,8 +45,10 @@
     "zlib-sync": "^0.1.8"
   },
   "scripts": {
-    "dev": "gulp watch",
-    "start": "node dist/bot.js"
+    "dev-node": "gulp watch",
+    "dev-bun": "bun run --watch src/index.ts ",
+    "build": "gulp build",
+    "start": "bun dist/index.js"
   },
   "keywords": [
     "discord.js"

@@ -1,38 +1,37 @@
 import { 
   UserContextMenuCommandInteraction,
   MessageContextMenuCommandInteraction,
-  ContextMenuCommandInteraction,
+  RESTPostAPIContextMenuApplicationCommandsJSONBody,
   ContextMenuCommandBuilder,
   ContextMenuCommandType
  } from "discord.js";
-import Client from "../customClient.js";
+import Bot from "../bot.js";
 import { BaseComponent } from "../baseComponent.js";
-import { Handler } from "./baseHandler.js";
+import { Handler } from "./AbstractHandler.js";
 
 type CurrentInteraction<T> = T extends 2 ? UserContextMenuCommandInteraction : MessageContextMenuCommandInteraction 
-type ContextMenuHandlerType<T extends ContextMenuCommandType> = (this: Client, interaction: CurrentInteraction<T>) => Promise<void> | void
+type ContextMenuHandlerType<T extends ContextMenuCommandType> = (this: Bot, interaction: CurrentInteraction<T>) => Promise<void>
 
-interface ContextMenuOptions<T extends ContextMenuCommandType> {
-  name: string
+interface ContextMenuOptions<T extends ContextMenuCommandType> extends RESTPostAPIContextMenuApplicationCommandsJSONBody {
   type: T
-  builder?: ContextMenuCommandBuilder
   handler: ContextMenuHandlerType<T>
 }
 
 export class ContextMenuCommand<T extends ContextMenuCommandType = ContextMenuCommandType> extends BaseComponent<ContextMenuHandlerType<ContextMenuCommandType>> {
   type: T
-  builder: ContextMenuCommandBuilder
+  data: RESTPostAPIContextMenuApplicationCommandsJSONBody
   constructor (options: ContextMenuOptions<T>) {
     super(options.name, options.handler)
     this.type = options.type
-    this.builder = options.builder ?? (new ContextMenuCommandBuilder())
+  
+    this.data = (new ContextMenuCommandBuilder())
       .setName(options.name)
-      .setType(this.type)
+      .setType(this.type).toJSON()
   }
 }
 
 export class ContextMenuHandler extends Handler<ContextMenuCommand> {
-  async runUserContextMenuInteraction (interaction: UserContextMenuCommandInteraction | MessageContextMenuCommandInteraction, bot: Client) {
+  async runUserContextMenuInteraction (interaction: UserContextMenuCommandInteraction | MessageContextMenuCommandInteraction, bot: Bot) {
     await this.cache.get(interaction.commandName)?.handler.call(bot, interaction)
   }
 }

@@ -14,7 +14,7 @@ export default new Command({
   name: "yamete",
   description: "Call the bot and says 'Yamete kudasai!!'",
   permissions: ['Administrator'],
-  handler (message) {
+  async handler (message) {
     if (!message.member!.voice.channel) return;
 
     let connection = getVoiceConnection(message.guildId!)!
