@@ -1,4 +1,3 @@
-import { ChannelType } from "discord.js";
 import { Command } from "../handlers/commandHandler.js";
 import { error } from "../logger.js";
 import { filename } from 'dirname-filename-esm'
@@ -30,7 +29,7 @@ export default new Command({
         await message.channel.bulkDelete(num + 1).catch((err: Error | string) => error(err, __filename));
       }
     } catch (e) {
-      error(e as string, __filename);
+      error(e, __filename);
     }
   }
 })

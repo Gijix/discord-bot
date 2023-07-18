@@ -38,7 +38,7 @@ export interface MessageCommand extends DeferableMessage {
   replyDefer (arg: string | MessagePayload | MessageCreateOptions): Promise<DeferableMessage>
 };
 
-type BaseHandler<S, T = any> = (
+type BaseHandler<S> = (
   this: Bot<true>,
   param: S extends true ? MessageCommand : ChatInputCommandInteraction<'raw' | 'cached'>,
   // options: S extends true ? undefined : T
@@ -54,7 +54,6 @@ interface BaseCommandOption<T extends string, S extends string, R extends boolea
 
 interface ChatInteractionOption<T extends string, S extends string, R extends APIApplicationCommandOption = APIApplicationCommandOption> extends BaseCommandOption<T, S, false, true> {
   isSlash: true;
-  handler: BaseHandler<false>;
   options?: R[]
 }
 
@@ -87,7 +86,7 @@ export class CommandHandler extends Handler<Command> {
   }
 
   async runMessage(message: Message, bot: Bot<true>) {
-    const prefix = process.env.PREFIX!;
+    const prefix = process.env.PREFIX;
     const splitedMessage = message.content.split(" ").filter((str) => str);
     const messageCommand = splitedMessage.shift()!;
     const messagePrefix = messageCommand[0];

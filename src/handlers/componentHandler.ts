@@ -1,24 +1,23 @@
-import { ComponentType, MappedInteractionTypes } from "discord.js";
+import { ComponentType, MappedInteractionTypes, StringMappedInteractionTypes } from "discord.js";
 import { BaseComponent } from "../baseComponent.js";
 import Bot from "../bot.js";
 import { Handler } from "./AbstractHandler.js";
 
-type TypeKey = Exclude<ComponentType,1 | 4>
+type TypeKey = Exclude<keyof StringMappedInteractionTypes, 'ActionRow'>
 
-type BaseHandler<S extends TypeKey> = (this: Bot, interaction: MappedInteractionTypes[S]) => Promise<void>
-
+type BaseHandler<S extends TypeKey> = (this: Bot<true>, interaction: StringMappedInteractionTypes<'cached' | 'raw'>[S]) => Promise<void>
 
 interface ComponentOptions<S extends TypeKey> {
-  type: TypeKey
+  type: S
   handler: BaseHandler<S>
   name: string
-  description: string
 }
 
 export class ComponentRow<S extends TypeKey = TypeKey> extends BaseComponent<BaseHandler<S>> {
   constructor (options: ComponentOptions<S>) {
-    const { name, description, handler } = options
+    const { name, handler } = options
     super(name, handler)
+
   }
 }
 

@@ -1,5 +1,5 @@
-import { getVoiceConnection, joinVoiceChannel } from "@discordjs/voice";
-import { CommandHandler, MessageCommand } from "./handlers/commandHandler.js";
+import { VoiceConnection, getVoiceConnection, joinVoiceChannel } from "@discordjs/voice";
+import { CommandHandler } from "./handlers/commandHandler.js";
 import {
     Client,
     Message,
@@ -27,6 +27,7 @@ import { PlayerManager } from "./musicPlayer.js";
 import { GuildDB } from "./database.js";
 import { checkLogChannel } from "./decorator/checkLogChannel.js";
 import { ComponentHandler } from './handlers/componentHandler.js';
+import { EventHandler } from "./handlers/EventHandler.js";
 
 const __filename = filename(import.meta)
 
@@ -74,8 +75,14 @@ class Bot<T extends boolean = boolean> extends Client<T> {
   }
 
   async setup () {
-    await Promise.all([this.commandHandler.setup(), this.modalHandler.setup(), this.contextMenuHandler.setup(), this.componentHandler.setup()])
-    await this.deployApplicationCommand()
+    await Promise.all([
+      this.commandHandler.load(), 
+      this.modalHandler.load(), 
+      this.contextMenuHandler.load(), 
+      this.componentHandler.load(), 
+    ])
+    
+    await Promise.all([await this.eventHandler.setup(this), await this.deployApplicationCommand()])
     this.isSetup = true
   }
 
@@ -83,8 +90,9 @@ class Bot<T extends boolean = boolean> extends Client<T> {
   contextMenuHandler = new ContextMenuHandler('contextMenuCommands')
   componentHandler = new ComponentHandler('componentRows')
   modalHandler = new ModalHandler('modals')
+  eventHandler = new EventHandler('events')
 
-  playerManager: PlayerManager = new PlayerManager(this)
+  playerManager = new PlayerManager(this)
 
   async deployApplicationCommand () {
     const rest = new REST({ version: '10' }).setToken(process.env.BOT_TOKEN);
@@ -103,7 +111,8 @@ class Bot<T extends boolean = boolean> extends Client<T> {
 
   prefix: string = process.env.PREFIX || '$'
 
-  join (member: GuildMember, force?: boolean) {
+  join (member: GuildMember, force: true): VoiceConnection
+  join (member: GuildMember, force?: boolean): VoiceConnection | undefined {
     if (!force) {
       const voiceConnection = getVoiceConnection(member.guild.id)
       if(voiceConnection) return
@@ -206,7 +215,7 @@ class Bot<T extends boolean = boolean> extends Client<T> {
       { name: "Channel", value: (message.channel as TextChannel).name, inline: true }
     );
     
-    this.log(embed.data, message.guildId)
+    await this.log(embed.data, message.guildId)
   }
 
   // @ts-ignore
@@ -229,7 +238,7 @@ class Bot<T extends boolean = boolean> extends Client<T> {
         { name: `deleted by`, value: `<@${executer.id}>`, inline: false }
       );
 
-      this.log(embed.data, message.guildId)
+      await this.log(embed.data, message.guildId)
     } catch (e) {
       error(e as string, __filename);
     }
@@ -248,7 +257,7 @@ class Bot<T extends boolean = boolean> extends Client<T> {
       { name: "Channel", value: (newMessage.channel as TextChannel).name, inline: false }
     );
 
-    this.log(embed.data, newMessage.guildId)
+    await this.log(embed.data, newMessage.guildId)
   }
 
   // @ts-ignore
@@ -265,7 +274,7 @@ class Bot<T extends boolean = boolean> extends Client<T> {
       { name: "As", value: member.user.username, inline: true }
     );
     
-    this.log(embed.data, member.guild.id)
+    await this.log(embed.data, member.guild.id)
   }
 
   // @ts-ignore
@@ -301,7 +310,7 @@ class Bot<T extends boolean = boolean> extends Client<T> {
       );
     }
     
-    this.log(embed.data, oldstate.guild.id)
+    await this.log(embed.data, oldstate.guild.id)
   }
 }
 

@@ -14,7 +14,7 @@ export default new Modal({
   },
   name: 'test',
   id: 'modal1',
-  handler (data, interaction) {
+  async handler (data, interaction) {
     interaction.reply(JSON.stringify(data))
   }
 })
