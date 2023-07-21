@@ -12,6 +12,8 @@ export abstract class Handler<S extends BaseComponent> {
     this.path = path.join(process.cwd(),process.env.OUTDIR, ...paths)
   }
 
+  protected onLoad?(component: S): void;
+
   async load () {
     this.cache = await this._load()
 
@@ -38,7 +40,7 @@ export abstract class Handler<S extends BaseComponent> {
       }
 
       const file = (await import("file://" + filepath)) as { default: any };
-      const baseComponent = file.default
+      const baseComponent = file.default as S
 
       if (!(baseComponent instanceof BaseComponent)) {
         throw new Error('import is not based on BaseComponent')
@@ -53,6 +55,8 @@ export abstract class Handler<S extends BaseComponent> {
       if (paths.length !== 0) {
         baseComponent.category = paths.join('-')
       }
+
+      if (this.onLoad) this.onLoad(baseComponent)
 
       preCache.set(baseComponent.id || baseComponent.name, baseComponent as S)
     }

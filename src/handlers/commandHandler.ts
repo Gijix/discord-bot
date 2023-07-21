@@ -78,6 +78,18 @@ export class CommandHandler extends Handler<Command> {
     return (message.inGuild() && Boolean(message.member))
   }
 
+  onLoad (arg: Command) {
+    if (arg.isMessage()) {
+      if (this.messages.some(command => command.alias.includes(arg.name))) {
+        throw new Error(`command name ${arg.name} already used for command alias`)
+      }
+
+      if (this.messages.some(command =>  arg.alias.includes(command.name))) {
+        throw new Error(`command alias ${JSON.stringify(arg.alias)} already used for command name`)
+      }
+    }
+  }
+
   get messages () {
     return this.cache.filter((command): command is Command<false> => !command.isSlash)
   }
@@ -142,6 +154,10 @@ export class Command<T extends boolean = boolean, R extends string = string, U e
   permissions: PermissionsString[] = [];
   alias: string[] = []
 
+  isMessage (): this is Command<false> {
+    return this.isSlash !== true
+  } 
+
   constructor(options: MessageOption<R, U> | ChatInteractionOption<R, U>) {
     let { name, description, handler, isSlash, permissions, isActivated } = options
     super(name, handler)
@@ -171,7 +187,3 @@ export class Command<T extends boolean = boolean, R extends string = string, U e
     
   }
 }
-
-
-
-

@@ -31,4 +31,4 @@ export class EventHandler extends Handler<EventListener> {
       client.on(event.name, event.handler.bind(client))
     })
   }
-}  
+}
