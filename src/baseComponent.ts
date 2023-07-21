@@ -7,7 +7,11 @@ export abstract class BaseComponent<T extends Function = Function> {
       return value
     }
 
-    return Object.keys(value as string | number | boolean).reduce((acc, key) => {
+    return Object.keys(value).reduce((acc, key) => {
+      if (typeof key ==="symbol") {
+        key = key.toString()
+      }
+
       const ref = value[key]
       if (['string', 'number', 'boolean'].includes(typeof ref) || ref === null) {
         acc[key] = ref

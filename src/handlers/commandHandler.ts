@@ -59,6 +59,7 @@ interface ChatInteractionOption<T extends string, S extends string, R extends AP
 
 interface MessageOption <T extends string, S extends string> extends BaseCommandOption<T, S, true, false> {
   isSlash?: false;
+  alias?: string[]
 }
 
 function isMention (str: string) {
@@ -78,11 +79,15 @@ export class CommandHandler extends Handler<Command> {
   }
 
   get messages () {
-    return this.cache.filter((command): command is Command<true> => !command.isSlash)
+    return this.cache.filter((command): command is Command<false> => !command.isSlash)
   }
 
   get slashs () {
     return this.cache.filter((command): command is Command<true> => command.isSlash)
+  }
+
+  getFromAlias (alias: string) {
+    return this.messages.find(command => command.alias.includes(alias))
   }
 
   async runMessage(message: Message, bot: Bot<true>) {
@@ -91,7 +96,7 @@ export class CommandHandler extends Handler<Command> {
     const messageCommand = splitedMessage.shift()!;
     const messagePrefix = messageCommand[0];
     const messageCommandParsed = messageCommand.slice(1);
-    const command = this.messages.get(messageCommandParsed!)
+    const command = this.messages.get(messageCommandParsed!) || this.getFromAlias(messageCommandParsed)
   
     if (!command) {
       error(`command doesn't exist: ${messageCommandParsed}`, __filename)
@@ -135,6 +140,7 @@ export class Command<T extends boolean = boolean, R extends string = string, U e
   isSlash: T;
   data?: RESTPostAPIChatInputApplicationCommandsJSONBody
   permissions: PermissionsString[] = [];
+  alias: string[] = []
 
   constructor(options: MessageOption<R, U> | ChatInteractionOption<R, U>) {
     let { name, description, handler, isSlash, permissions, isActivated } = options
@@ -148,6 +154,7 @@ export class Command<T extends boolean = boolean, R extends string = string, U e
     } else {
       this.isActivated = true
     }
+
     this.description = description;
     this.isSlash = value as T ;
     this.permissions = permissions || [];
@@ -155,6 +162,10 @@ export class Command<T extends boolean = boolean, R extends string = string, U e
       this.data = { name, description }
       if ('options' in options ) {
         this.data.options = options.options
+      }
+    } else  {
+      if ('alias' in options) {
+        this.alias = options.alias || []
       }
     }
     

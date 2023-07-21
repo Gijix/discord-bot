@@ -7,7 +7,7 @@ export default new Command({
   async handler(interaction) {
     const modal = this.modalHandler.cache.get('modal1') 
     if (modal) {
-      await interaction.showModal(modal)
+      await interaction.showModal(modal.builder)
     }
   }
 })

@@ -164,18 +164,17 @@ class Bot<T extends boolean = boolean> extends Client<T> {
    *  create embed message
    */
   createEmbed(color: ColorResolvable, title: string, author: string, ...fields: EmbedField[]): EmbedBuilder {
-    fields = fields.filter((field) => field.value && field.name)
     const time = this.eventTime;
     const embed = new EmbedBuilder({
       title,
       author: {
         name: author,
       },
-      fields,
-      footer: { text: `${time.hours} H ${time.minutes}  -  ${time.day}/${time.month}/${time.year}`} 
+      fields: fields.filter((field) => field.value && field.name),
+      footer: { text: `${time.hours} H ${time.minutes}  -  ${time.day}/${time.month}/${time.year}`}
     })
       .setColor(color)
-    return embed;
+    return embed
   }
 
   async getGuildLogChannel (guildId: string) {

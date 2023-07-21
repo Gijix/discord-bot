@@ -1,9 +1,10 @@
 import './envCheck.js'
-import { GatewayIntentBits } from 'discord.js'
+import { GatewayIntentBits, AuditLogEvent } from 'discord.js'
 import Bot from "./bot.js";
 import { error, warn } from './logger.js';
 import { filename } from 'dirname-filename-esm';
 import { envCheck } from './envCheck.js';
+import { connect } from './database.js';
 
 const __filename = filename(import.meta)
 const { Guilds, GuildMessages, GuildVoiceStates, MessageContent } = GatewayIntentBits
@@ -11,6 +12,7 @@ const bot = new Bot({ intents: [Guilds, GuildMessages, GuildVoiceStates, Message
 
 try {
   envCheck()
+  await connect()
   await bot.setup()
   await bot.login();
 } catch (err) {

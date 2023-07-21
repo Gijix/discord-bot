@@ -2,6 +2,10 @@ import { Guild, Prisma, PrismaClient } from "@prisma/client";
 
 const prismaClient = new PrismaClient()
 
+export async function connect () {
+  await prismaClient.$connect()
+}
+
 export class GuildDB {
   private constructor (public guildInfo: Guild) {}
 
