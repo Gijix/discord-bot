@@ -17,3 +17,9 @@ model Guild {
   logCanalId String?
   local String?
 }
+
+model User {
+  id String @id @default(uuid())
+  discordId String @unique
+  loveToyId String?
+}

@@ -9,8 +9,8 @@ import {
 } from "discord.js";
 import { BaseComponent } from "../baseComponent.js";
 import { Handler } from "./AbstractHandler.js";
-import Bot from '../bot.js'
-import { error } from "../logger.js";
+import type Bot from '../bot.js'
+import { error } from "../util/logger.js";
 import { filename } from 'dirname-filename-esm';
 
 const __filename = filename(import.meta)
@@ -61,16 +61,16 @@ export class Modal<T extends ComponentOptions = ComponentOptions> extends BaseCo
 
 export class ModalHandler extends Handler<Modal> {
   async onSubmit (interaction: ModalSubmitInteraction, bot: Bot) {
-    const fieldList: Record<string, string> = {}
-    interaction.fields.fields.forEach((textInput) => {
-      fieldList[textInput.customId] = textInput.value 
-    })
-
     const modal = this.cache.get(interaction.customId)
     
     if(!modal) {
       return error(`modal with custom id ${interaction.customId} doesn'exist`, __filename)
     }
+
+    const fieldList: Record<string, string> = {}
+    interaction.fields.fields.forEach((textInput) => {
+      fieldList[textInput.customId] = textInput.value 
+    })
 
     await modal.handler.call(bot, fieldList, interaction)
   }

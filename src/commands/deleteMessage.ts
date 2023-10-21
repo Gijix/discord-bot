@@ -1,5 +1,5 @@
 import { Command } from "../handlers/commandHandler.js";
-import { error } from "../logger.js";
+import { error } from "../util/logger.js";
 import { filename } from 'dirname-filename-esm'
 
 const __filename = filename(import.meta)

@@ -67,15 +67,17 @@ export function success(text: string, section?: string) {
   console.log(logSymbols.success, loggerPattern(text, "success", section))
 }
 
+export function debug (text: string, section?: string) {
+  console.debug(logSymbols.info, loggerPattern(text, "debug", section))
+}
+
 export function createLogger(section: string) {
   return {
     log: (text: string) => log(text, section),
     error: (text: string | Error, full?: boolean) => error(text, section, full),
     warn: (text: string) => warn(text, section),
     success: (text: string) => success(text, section),
+    debug: (text: string) => debug(text, section)
   }
 }
 
-export function debug (text: string, section?: string) {
-  console.log(logSymbols.info, loggerPattern(text, "debug", section))
-}

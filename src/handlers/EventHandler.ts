@@ -1,7 +1,7 @@
-import { ClientEvents, Awaitable } from "discord.js";
+import type { ClientEvents, Awaitable } from "discord.js";
 import { BaseComponent } from "../baseComponent.js";
 import { Handler } from "./AbstractHandler.js";
-import Bot from "../bot.js";
+import type Bot from "../bot.js";
 
 type Key = keyof ClientEvents
 type BaseListener<T extends Key> = (this: Bot<true>, ...arg: ClientEvents[T]) => Awaitable<void>
@@ -13,7 +13,7 @@ interface EventOptions<T extends Key> {
 }
 
 export class EventListener<T extends Key = Key> extends BaseComponent<BaseListener<T>> {
-  override name: Key
+  override name: T
   once: boolean
   constructor (options: EventOptions<T>) {
     const { name, listener, once } = options
@@ -28,7 +28,7 @@ export class EventHandler extends Handler<EventListener> {
   async setup (client: Bot) {
     await this.load()
     this.cache.forEach(event => {
-      client.on(event.name, event.handler.bind(client))
+      client[event.once ? 'once' : 'on'](event.name, event.handler.bind(client))
     })
   }
 }

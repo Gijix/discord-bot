@@ -1,5 +1,5 @@
 import { EventListener } from "../handlers/EventHandler.js";
-import { error } from "../logger.js";
+import { error } from "../util/logger.js";
 
 export default new EventListener({
   name: 'interactionCreate',
@@ -12,10 +12,11 @@ export default new EventListener({
         if (command.isActivated) {
           await command.handler.call(this, interaction).catch((err) => error(err, __filename, true))
         } else {
-          await interaction.reply({ ephemeral: true, content: 'command not implemented yet' })
+          await interaction.reply({ ephemeral: true, content: `command ${command.name} not implemented yet` })
         }
+      } else {
+        await interaction.reply({ ephemeral: true, content: `missing handler for ${interaction.commandName}` })
       }
-
     }
 
     if (interaction.isContextMenuCommand()) {

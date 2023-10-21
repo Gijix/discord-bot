@@ -3,8 +3,8 @@ import { Command } from "../handlers/commandHandler.js";
 export default new Command({
   name: 'setlogchanel',
   description: 'choose the channel where the log will be send',
-  isSlash: true,
   permissions: ['Administrator'],
+  isSlash: true,
   async handler (interaction) {
     const channel = interaction.channel
     if (channel) {

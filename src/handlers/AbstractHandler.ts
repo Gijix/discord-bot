@@ -1,8 +1,8 @@
-import { Collection } from "discord.js";
+import { Base, Collection } from "discord.js";
 import path from "path";
 import { readdir } from "fs/promises";
 import { BaseComponent } from "../baseComponent.js";
-import { log } from "../logger.js";
+import { log } from "../util/logger.js";
 
 export abstract class Handler<S extends BaseComponent> {
   path: string
@@ -41,9 +41,8 @@ export abstract class Handler<S extends BaseComponent> {
 
       const file = (await import("file://" + filepath)) as { default: any };
       const baseComponent = file.default as S
-
-      if (!(baseComponent instanceof BaseComponent)) {
-        throw new Error('import is not based on BaseComponent')
+      if (!(Object.getPrototypeOf(baseComponent) !== BaseComponent.prototype)) {
+        throw new Error(`import is not based on BaseComponent "${BaseComponent.name}"`)
       }
 
       const identifier = baseComponent.id || baseComponent.name

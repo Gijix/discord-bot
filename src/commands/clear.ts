@@ -1,7 +1,7 @@
-import { Message, Collection } from "discord.js";
+import type { Message, Collection } from "discord.js";
 import { Command } from "../handlers/commandHandler.js";
 import { filename } from 'dirname-filename-esm'
-import { error } from "../logger.js";
+import { error } from "../util/logger.js";
 
 const __filename = filename(import.meta)
 

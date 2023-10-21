@@ -1,11 +1,11 @@
-import { 
+import type {
   UserContextMenuCommandInteraction,
   MessageContextMenuCommandInteraction,
   RESTPostAPIContextMenuApplicationCommandsJSONBody,
-  ContextMenuCommandBuilder,
   ContextMenuCommandType
  } from "discord.js";
-import Bot from "../bot.js";
+import { ContextMenuCommandBuilder} from 'discord.js'
+import type Bot from "../bot.js";
 import { BaseComponent } from "../baseComponent.js";
 import { Handler } from "./AbstractHandler.js";
 

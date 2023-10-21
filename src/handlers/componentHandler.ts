@@ -11,7 +11,6 @@ import {
 import { BaseComponent } from "../baseComponent.js";
 import Bot from "../bot.js";
 import { Handler } from "./AbstractHandler.js";
-import { error } from "../logger.js";
 
 type TypeKey = Exclude<keyof StringMappedInteractionTypes, 'ActionRow'>
 
@@ -53,6 +52,7 @@ export class ComponentHandler extends Handler<ComponentRow> {
     if (!component) {
       throw new Error('invalid component id')
     }
+
     //@ts-ignore
     return component as ComponentRow<T>
   }

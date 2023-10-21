@@ -16,15 +16,16 @@ import {
     Routes,
     APIEmbed,
     TextBasedChannel,
-    Events
+    Events,
+    Guild,
   } from "discord.js";
 import { ContextMenuHandler } from "./handlers/contextMenuHandler.js";
 import { ModalHandler } from "./handlers/modalHandler.js";
-import { log } from "./logger.js";
+import { log } from "./util/logger.js";
 import { filename } from 'dirname-filename-esm'
-import { error } from "./logger.js";
+import { error } from "./util/logger.js";
 import { PlayerManager } from "./musicPlayer.js";
-import { GuildDB } from "./database.js";
+import { GuildDb, UserDb } from "./database.js";
 import { checkLogChannel } from "./decorator/checkLogChannel.js";
 import { ComponentHandler } from './handlers/componentHandler.js';
 import { EventHandler } from "./handlers/EventHandler.js";
@@ -58,7 +59,8 @@ class Bot<T extends boolean = boolean> extends Client<T> {
     })
   }
 
-  GuildManager = GuildDB
+  GuildManager = GuildDb
+  UserManager = UserDb
 
   isSetup = false;
 
@@ -82,7 +84,7 @@ class Bot<T extends boolean = boolean> extends Client<T> {
       this.componentHandler.load(), 
     ])
     
-    await Promise.all([await this.eventHandler.setup(this), await this.deployApplicationCommand()])
+    await Promise.all([await this.eventHandler.setup(this), await this.deployAllCommand()])
     this.isSetup = true
   }
 
@@ -94,39 +96,58 @@ class Bot<T extends boolean = boolean> extends Client<T> {
 
   playerManager = new PlayerManager(this)
 
-  async deployApplicationCommand () {
-    const rest = new REST({ version: '10' }).setToken(process.env.BOT_TOKEN);
+  private get applicationCommandsData () {
     const commandsSlash = this.commandHandler.slashs.filter(slash => slash.isActivated).map(command => command.data)
     const contextMenuCommands = this.contextMenuHandler.cache.map((command) => command.data)
+
+    return  [...commandsSlash, ...contextMenuCommands]
+  }
+
+  rest = new REST({ version: '10' }).setToken(process.env.BOT_TOKEN)
+
+  async deployGuildCommand (guildId: string) {
     try {
-      const data = await rest.put(
-        Routes.applicationCommands(process.env.CLIENT_ID),
-        { body: [...commandsSlash, ...contextMenuCommands] },
+      const data = await this.rest.put(
+        Routes.applicationGuildCommands(process.env.CLIENT_ID, guildId),
+        { body: this.applicationCommandsData },
       )
-      log(`reloaded ${Array.isArray(data) ? data.length : 1 } application (/) commands.`);         
+      log(`successfuly deploy ${Array.isArray(data) ? data.length : 1 } application (/) commands on ${guildId}.`);         
     } catch(err){
       error(err, __filename)
     }
   }
 
+  async deployAllCommand () {
+    // try {
+    //   const data = await this.rest.put(
+    //     Routes.applicationCommands(process.env.CLIENT_ID),
+    //     { body: this.applicationCommandsData },
+    //   )
+    //   log(`reloaded ${Array.isArray(data) ? data.length : 1 } application (/) commands.`);         
+    // } catch(err){
+    //   error(err, __filename)
+    // }
+  }
+
   prefix: string = process.env.PREFIX || '$'
 
-  join (member: GuildMember, force: true): VoiceConnection
-  join (member: GuildMember, force?: boolean): VoiceConnection | undefined {
+  join (guild: Guild, channelId: string, force: true): VoiceConnection
+  join (guild: Guild, channelId: string): VoiceConnection | undefined
+  join (guild: Guild, channelId: string, force?: boolean): VoiceConnection | undefined {
+    const join = () => joinVoiceChannel({
+      guildId: guild.id,
+      channelId: channelId,
+      adapterCreator: guild.voiceAdapterCreator
+    })
+    const connection = getVoiceConnection(guild.id)
     if (!force) {
-      const voiceConnection = getVoiceConnection(member.guild.id)
-      if(voiceConnection) return
+      if (connection) return
+      return join()
     }
 
-    const channelId = member.voice.channelId
+    connection?.destroy()
 
-    if (!channelId) return
-
-    return joinVoiceChannel({
-      guildId: member.guild.id,
-      channelId: channelId,
-      adapterCreator: member.guild.voiceAdapterCreator
-    })
+    return join()
   }
 
   /**

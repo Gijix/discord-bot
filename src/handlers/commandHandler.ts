@@ -12,7 +12,7 @@ import {
 import Bot from "../bot.js";
 import { Handler } from "./AbstractHandler.js";
 import { BaseComponent } from "../baseComponent.js";
-import { error } from "../logger.js";
+import { error } from "../util/logger.js";
 import { filename } from 'dirname-filename-esm';
 import { setTimeout } from "timers/promises";
 
@@ -102,7 +102,7 @@ export class CommandHandler extends Handler<Command> {
     return this.messages.find(command => command.alias.includes(alias))
   }
 
-  async runMessage(message: Message, bot: Bot<true>) {
+  async runMessage(message: Message<true>, bot: Bot<true>) {
     const prefix = process.env.PREFIX;
     const splitedMessage = message.content.split(" ").filter((str) => str);
     const messageCommand = splitedMessage.shift()!;
@@ -184,6 +184,5 @@ export class Command<T extends boolean = boolean, R extends string = string, U e
         this.alias = options.alias || []
       }
     }
-    
   }
 }

@@ -5,13 +5,11 @@ import play, {
   SoundCloud,
   Spotify,
   SoundCloudPlaylist,
-  SoundCloudStream,
   SoundCloudTrack,
   YouTubePlayList,
   SpotifyAlbum,
   SpotifyPlaylist,
   SpotifyTrack,
-  YouTubeStream
 } from "play-dl";
 import Bot from "./bot.js";
 import { 
@@ -20,11 +18,10 @@ import {
   createAudioResource,
   AudioResource,
   AudioPlayerStatus,
-  VoiceConnection,
-  NoSubscriberBehavior
+  NoSubscriberBehavior,
 } from "@discordjs/voice";
 import { MessageCommand } from "./handlers/commandHandler.js";
-import { log, error } from "./logger.js";
+import { error } from "./util/logger.js";
 import { filename } from "dirname-filename-esm";
 import { Collection, GuildMember } from "discord.js";
 
@@ -37,19 +34,14 @@ interface Media {
 
 type MediaType = YouTube | Spotify | SoundCloud
 
-class MusicPlayer {
-  static hasRefreshToken: boolean = false
-  static setRefreshtoken () {
-    return play.setToken({
-      spotify: {
-        client_id: '623895b5f4f7481c9bff17e0bc90a310',
-        client_secret: '5992af24a1c248b894942511e231ef2f',
-        market: 'FR',
-        refresh_token: 'AQCjsvGTbuJj5ZerE9WeMa0QUny27ai-Vc_7GMDpqNfaph2b6guHuNDHZ8s9QmzS34nyLJr1UL2MGoLAS1lhbSdjvEdClSi6ZdEFqYBzExGMcrfSD6jpagzknO8O7K305hQ'
-      }
-    })
+let soId = await play.getFreeClientID()
+await play.setToken({
+  soundcloud:{
+    client_id: soId
   }
+})
 
+export class MusicPlayer {
   constructor (public guildId: string, public client: Bot) {
     this.player.on(AudioPlayerStatus.Idle, () => {
       if (this.queue.length > 0) {
@@ -76,23 +68,33 @@ class MusicPlayer {
 
 
   playNext() {
-    this.player.play(this.queue.shift()!.audioRessource);
+    const nextTrack = this.queue.shift()
+
+    if (nextTrack) {
+      this.player.play(nextTrack.audioRessource)
+    }
 
     return this.player;
   }
 
   async getAudioRessource (streamInfo: MediaType) {
-    let stream: SoundCloudStream | YouTubeStream
-
-    const streamMedia = (info:  YouTubeVideo | SpotifyTrack | SoundCloudTrack) => play.stream(info.url)
+    let data
 
     if (this.isSoundClound(streamInfo)) {
-      stream = await this.getFromSoundCloud(streamInfo).then(streamMedia)
+      data = await this.getFromSoundCloud(streamInfo)
     } else if (this.isYoutube(streamInfo)) {
-      stream = await this.getFromYoutube(streamInfo).then(streamMedia)
+      data = await this.getFromYoutube(streamInfo)
     } else {
-      stream = await this.getFromSpotify(streamInfo).then(streamMedia)
+      data = await this.getFromSpotify(streamInfo)
     }
+
+    let url = data.url
+
+    if (data instanceof SpotifyTrack) {
+      url = (await play.search(data.name))[0].url
+    }
+
+    const stream = await play.stream(url)
 
     return createAudioResource(stream.stream, { inputType: stream.type, inlineVolume: true })
   }
@@ -121,7 +123,8 @@ class MusicPlayer {
   }
 
   async getMedia(baseUrl: string): Promise<YouTubeVideo | Spotify | SoundCloud | null> {
-    const validation = await play.validate(baseUrl);
+
+    const validation = await play.validate(baseUrl.replace('intl-fr/', ''));
     if (!validation) {
       console.log("error returning with validation " + validation);
       return null
@@ -143,36 +146,34 @@ class MusicPlayer {
   }
 
   async play(query: string, member: GuildMember) {
-    if (!MusicPlayer.hasRefreshToken) {
-      await MusicPlayer.setRefreshtoken()
-    }
-
-    let connection = getVoiceConnection(member.guild.id)
     const channelId = member.guild.members.me!.voice.channelId
+    const userChannelId = member.voice.channelId
 
-    if (channelId && member?.voice.channelId !== channelId) {
+    if (channelId && (member.voice.channelId !== channelId)) {
       throw new Error('already in voice channel')
     }
-
-    const userConnection = this.client.join(member)
-
-    if (!userConnection) {
+  
+    if (!userChannelId) {
       throw new Error('user is not in voice channel')
     }
 
+    const connection = this.client.join(member.guild, userChannelId, true)
+    const media = (await this.getMedia(query));
+  
+    if (!media) {
+      throw new Error('invalid media')
+    }
 
-    connection = getVoiceConnection(member.guild.id) || userConnection
-    const media = (await this.getMedia(query))!;
     const audioRessource = await this.getAudioRessource(media)
 
     if (this.player.state.status !== AudioPlayerStatus.Idle ) {
       this.queue.push({ audioRessource, streamInfo: media as YouTube })
+    } else {
+      connection.subscribe(this.player)
+    
+      this.player.play(audioRessource)
     }
 
-    connection.subscribe(this.player)
-    
-    this.player.play(audioRessource)
-  
     return this.player;
   }
 
@@ -214,12 +215,10 @@ class MusicPlayer {
 export class PlayerManager extends Collection<string, MusicPlayer>{
   constructor (public client: Bot) {
     super()
-
-    return this
   }
 
   ensure (guildId: string) {
-    if (this.client.guilds.cache.has(guildId)) {
+    if (!this.client.guilds.cache.has(guildId)) {
       throw new Error('invalid guild id')
     }
 
