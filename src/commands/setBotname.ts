@@ -11,8 +11,7 @@ export default new Command({
         .replyDefer("Use a name without space")
         .then((msg) => msg.deferDelete(2000));
     } else {
-      await this.user!.setUsername(parsedMsg[1]);
+      await this.user.setUsername(parsedMsg[1]);
     }
   }
 })
-

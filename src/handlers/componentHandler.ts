@@ -32,10 +32,10 @@ interface ComponentOptions<S extends TypeKey> {
   make (builder: typeof mappedBuilder[S]): void
 }
 
-export class ComponentRow<S extends TypeKey = TypeKey> extends BaseComponent<BaseHandler<S>> {
-  data: typeof mappedBuilder[S] 
-  type: S
-  constructor (options: ComponentOptions<S>) {
+export class ComponentRow<T extends TypeKey = any> extends BaseComponent<BaseHandler<T>> {
+  data: typeof mappedBuilder[T] 
+  type: T
+  constructor (options: ComponentOptions<T>) {
     const { name, handler } = options
     super(name, handler)
     const builder = mappedBuilder[options.type]
@@ -47,13 +47,17 @@ export class ComponentRow<S extends TypeKey = TypeKey> extends BaseComponent<Bas
 }
 
 export class ComponentHandler extends Handler<ComponentRow> {
-  get<T extends TypeKey = TypeKey>(id: string): ComponentRow<T> {
+  get<T extends TypeKey = TypeKey>(id: string, type: T): ComponentRow<T> {
     const component = this.cache.get(id)
     if (!component) {
-      throw new Error('invalid component id')
+      throw new Error('invalid component id or type')
     }
 
-    //@ts-ignore
-    return component as ComponentRow<T>
+    if (component.type !== type) {
+      throw new Error('invalid type')
+    }
+
+    return component
   }
 }
+

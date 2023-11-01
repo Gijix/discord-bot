@@ -5,6 +5,7 @@ export default new Command({
   description: 'choose the channel where the log will be send',
   permissions: ['Administrator'],
   isSlash: true,
+  guildOnly: true,
   async handler (interaction) {
     const channel = interaction.channel
     if (channel) {

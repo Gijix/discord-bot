@@ -8,7 +8,7 @@ export default new Command({
   async handler (message) {
     await message.reply("i will restart in 5 seconds")
     await setTimeout(5000)
-    this.destroy() 
+    await this.destroy() 
     await this.login()
   }
 })

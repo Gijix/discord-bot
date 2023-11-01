@@ -5,6 +5,7 @@ export default new Command({
   name: 'setprefix',
   description: 'set the prefix for message command for this guild',
   isSlash: true,
+  guildOnly: true,
   options: [
     {
       type: ApplicationCommandOptionType.String,

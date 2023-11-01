@@ -1,6 +1,7 @@
 import './envCheck.js';
 import { GatewayIntentBits, Partials } from 'discord.js';
 import Bot from "./bot.js";
+import './util/VoiceChannel.js'
 import { error, warn } from './util/logger.js';
 import { filename } from 'dirname-filename-esm';
 import { envCheck } from './envCheck.js';

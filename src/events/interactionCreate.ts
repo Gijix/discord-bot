@@ -4,18 +4,21 @@ import { error } from "../util/logger.js";
 export default new EventListener({
   name: 'interactionCreate',
   async listener(interaction) {
-    if (!(interaction.inGuild() && this.isReady())) return
     if (interaction.isChatInputCommand()) {
       const command = this.commandHandler.slashs.get(interaction.commandName)
 
       if (command) {
+        if (((!interaction.inGuild()) && command.data?.dm_permission === false)) {
+          return
+        }
+
         if (command.isActivated) {
           await command.handler.call(this, interaction).catch((err) => error(err, __filename, true))
         } else {
           await interaction.reply({ ephemeral: true, content: `command ${command.name} not implemented yet` })
         }
       } else {
-        await interaction.reply({ ephemeral: true, content: `missing handler for ${interaction.commandName}` })
+        await interaction.reply({ ephemeral: true, content: `missing handler for ${interaction.commandName} with id: ${interaction.commandId}` })
       }
     }
 

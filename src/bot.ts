@@ -84,7 +84,7 @@ class Bot<T extends boolean = boolean> extends Client<T> {
       this.componentHandler.load(), 
     ])
     
-    await Promise.all([await this.eventHandler.setup(this), await this.deployAllCommand()])
+    await Promise.all([await this.eventHandler.setup(this), await this.deployCommands()])
     this.isSetup = true
   }
 
@@ -105,10 +105,12 @@ class Bot<T extends boolean = boolean> extends Client<T> {
 
   rest = new REST({ version: '10' }).setToken(process.env.BOT_TOKEN)
 
-  async deployGuildCommand (guildId: string) {
+  async deployCommands (guildId?: string) {
     try {
       const data = await this.rest.put(
-        Routes.applicationGuildCommands(process.env.CLIENT_ID, guildId),
+        guildId ?
+          Routes.applicationGuildCommands(process.env.CLIENT_ID, guildId) :
+          Routes.applicationCommands(process.env.CLIENT_ID),
         { body: this.applicationCommandsData },
       )
       log(`successfuly deploy ${Array.isArray(data) ? data.length : 1 } application (/) commands on ${guildId}.`);         
@@ -117,37 +119,30 @@ class Bot<T extends boolean = boolean> extends Client<T> {
     }
   }
 
-  async deployAllCommand () {
-    // try {
-    //   const data = await this.rest.put(
-    //     Routes.applicationCommands(process.env.CLIENT_ID),
-    //     { body: this.applicationCommandsData },
-    //   )
-    //   log(`reloaded ${Array.isArray(data) ? data.length : 1 } application (/) commands.`);         
-    // } catch(err){
-    //   error(err, __filename)
-    // }
-  }
-
   prefix: string = process.env.PREFIX || '$'
 
-  join (guild: Guild, channelId: string, force: true): VoiceConnection
-  join (guild: Guild, channelId: string): VoiceConnection | undefined
-  join (guild: Guild, channelId: string, force?: boolean): VoiceConnection | undefined {
+  join(guild: Guild, channelId: string): VoiceConnection | undefined
+  join(guild: Guild, channelId: string, force: true): VoiceConnection
+  join(guild: Guild, channelId: string, force: false): VoiceConnection | undefined
+  join(guild: Guild, channelId: string, force?: boolean): VoiceConnection | undefined {
     const join = () => joinVoiceChannel({
       guildId: guild.id,
       channelId: channelId,
       adapterCreator: guild.voiceAdapterCreator
     })
     const connection = getVoiceConnection(guild.id)
-    if (!force) {
-      if (connection) return
+
+    if (connection?.joinConfig.channelId === channelId) {
+      return connection
+    }
+
+    if (force) {
+      connection?.destroy()
+
       return join()
     }
 
-    connection?.destroy()
-
-    return join()
+    return connection ? undefined : join()
   }
 
   /**

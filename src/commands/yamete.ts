@@ -15,13 +15,14 @@ export default new Command({
   description: "Call the bot and says 'Yamete kudasai!!'",
   permissions: ['Administrator'],
   async handler (message) {
-    if (!message.member!.voice.channel) return;
+    const channel = message.member.voice.channel
+    if (!channel) return;
 
-    let connection = getVoiceConnection(message.guildId!)!
+    const connection = channel.join()
 
-    if (connection && connection.joinConfig.channelId !== message.member.voice.channelId) return
-
-    connection = connection || this.join(message.member)
+    if (!connection) {
+      return message.reply('bot already in a voice channel')
+    }
     const player = createAudioPlayer({
       behaviors: {
         noSubscriber: NoSubscriberBehavior.Pause

@@ -15,69 +15,68 @@ import { BaseComponent } from "../baseComponent.js";
 import { error } from "../util/logger.js";
 import { filename } from 'dirname-filename-esm';
 import { setTimeout } from "timers/promises";
-
+import { ArgsFunc, InputDefault } from "../util/arguments.js";
+import parse from 'yargs-parser'
 
 const __filename = filename(import.meta)
 
 type NonEmptyString<T extends string> = T extends '' ? never : T;
 
-type DeferableMessage = Message<true> & {
-  deferDelete (delay?: number): Promise<Message<true>> 
+type DeferableMessage<InGuild extends boolean = any> = Message<InGuild> & {
+  deferDelete (delay?: number): Promise<Message<InGuild>> 
 }
 
-async function deferDelete (this: DeferableMessage, delay = 0): Promise<Message<true>> {
+async function deferDelete<InGuild extends boolean = false>(this: DeferableMessage<InGuild>, delay = 0): Promise<Message<InGuild>> {
   await setTimeout(delay);
   return await this.delete();
 }
 
-export interface MessageCommand extends DeferableMessage {
+export interface MessageCommand<Options extends InputDefault = never, InGuild extends boolean = any> extends DeferableMessage<InGuild> {
   command: string;
-  arguments: string[];
-  send (arg: string | MessagePayload | MessageCreateOptions): Promise<DeferableMessage>
-  member: GuildMember
-  replyDefer (arg: string | MessagePayload | MessageCreateOptions): Promise<DeferableMessage>
+  arguments: Options extends InputDefault ? ArgsFunc<Options> : never;
+  send (arg: string | MessagePayload | MessageCreateOptions): Promise<DeferableMessage<InGuild>>
+  member: InGuild extends true ? GuildMember : GuildMember | null
+  replyDefer (arg: string | MessagePayload | MessageCreateOptions): Promise<DeferableMessage<InGuild>>
 };
 
-type BaseHandler<S> = (
+type BaseHandler<S, Options extends InputDefault = never, V extends boolean = any > = (
   this: Bot<true>,
-  param: S extends true ? MessageCommand : ChatInputCommandInteraction<'raw' | 'cached'>,
-  // options: S extends true ? undefined : T
-) => Promise<void> ;
+  param: S extends true ? MessageCommand<Options, V> : V extends true ? ChatInputCommandInteraction<'cached' | 'raw'> :  ChatInputCommandInteraction
+) => Promise<any> ;
 
-interface BaseCommandOption<T extends string, S extends string, R extends boolean, U extends boolean> {
+interface BaseCommandOption<T extends string, S extends string, R extends boolean, U extends boolean, V extends boolean = false, Options extends InputDefault = never> {
   isActivated?: boolean
   name: U extends true ? Lowercase<NonEmptyString<T>> : NonEmptyString<T>;
   description: NonEmptyString<S>;
   permissions?: PermissionsString[];
-  handler: BaseHandler<R>
+  handler: BaseHandler<R, Options, V>
+  guildOnly?: V
 }
 
-interface ChatInteractionOption<T extends string, S extends string, R extends APIApplicationCommandOption = APIApplicationCommandOption> extends BaseCommandOption<T, S, false, true> {
-  isSlash: true;
-  options?: R[]
+interface ChatInteractionOption<T extends string, S extends string, U extends boolean = boolean> extends BaseCommandOption<T, S, false, true, U> {
+  isSlash: true
+  options?: APIApplicationCommandOption[]
 }
 
-interface MessageOption <T extends string, S extends string> extends BaseCommandOption<T, S, true, false> {
+interface MessageOption <T extends string, S extends string, Options extends InputDefault, V extends boolean = false> extends BaseCommandOption<T, S, true, false, V, Options> {
   isSlash?: false;
   alias?: string[]
+  arguments?: Options
 }
 
-function isMention (str: string) {
-  return [
-    MessageMentions.ChannelsPattern,
-    MessageMentions.RolesPattern,
-    MessageMentions.UsersPattern,
-    MessageMentions.EveryonePattern
-  ].some((regex) => regex.test(str))
+function extract (message: Message) {
+  const splitedMessage = message.content.match(/(?:[^\s"']+|['"][^'"]*["'])+/g)!;
+  const messageCommand = splitedMessage.shift()!;
+  const messagePrefix = messageCommand[0];
+  const messageCommandParsed = messageCommand.slice(1);
+  return {
+    commandAlias: messageCommandParsed,
+    prefix: messagePrefix,
+    rest: splitedMessage
+  }
 }
 
 export class CommandHandler extends Handler<Command> {
-  isExtendedMessage(
-    message: Message 
-  ): message is MessageCommand {
-    return (message.inGuild() && Boolean(message.member))
-  }
-
   onLoad (arg: Command) {
     if (arg.isMessage()) {
       if (this.messages.some(command => command.alias.includes(arg.name))) {
@@ -102,21 +101,22 @@ export class CommandHandler extends Handler<Command> {
     return this.messages.find(command => command.alias.includes(alias))
   }
 
-  async runMessage(message: Message<true>, bot: Bot<true>) {
-    const prefix = process.env.PREFIX;
-    const splitedMessage = message.content.split(" ").filter((str) => str);
-    const messageCommand = splitedMessage.shift()!;
-    const messagePrefix = messageCommand[0];
-    const messageCommandParsed = messageCommand.slice(1);
-    const command = this.messages.get(messageCommandParsed!) || this.getFromAlias(messageCommandParsed)
-  
+  async runMessage(message: Message, bot: Bot<true>) {
+    const { commandAlias, rest, prefix } = extract(message)
+    const command = this.messages.get(commandAlias) || this.getFromAlias(commandAlias)
     if (!command) {
-      error(`command doesn't exist: ${messageCommandParsed}`, __filename)
+      error(`command doesn't exist: ${commandAlias}`, __filename)
       return
+    }
+
+    let guildPrefix: string = process.env.PREFIX
+
+    if (message.inGuild()) {
+      guildPrefix = (await bot.GuildManager.ensure(message.guildId)).guildInfo.prefix || process.env.PREFIX
     }
     
     if (
-      !(messagePrefix === prefix && this.isExtendedMessage(message)) ||
+      !(guildPrefix === prefix) ||
       (command?.permissions.length && !(command?.permissions.some(perm => message.member?.permissions.has(perm))))
     ) return 
 
@@ -125,46 +125,69 @@ export class CommandHandler extends Handler<Command> {
       return
     }
 
-    message.arguments = splitedMessage.filter(str => !isMention(str))
-    message.command = messageCommandParsed
-    message.deferDelete = deferDelete
-    message.send = async function (arg: string | MessageCreateOptions | MessagePayload) {
-      const msg = (await this.channel.send(arg)) as DeferableMessage
-      msg.deferDelete = deferDelete
-
-      return msg
+    const args = parse(rest)
+    let finalArgs = {} as ArgsFunc<InputDefault>
+    for (let i = 0; i < command.arguments.length; i++) {
+      let arg = command.arguments[i]
+      let value = args[arg.name]
+      if (arg.required) {
+        if (!args[arg.name]) {
+          return message.reply(`missing argument ${arg.name}`)
+        } else {
+          let types = ['number, boolean', 'string']
+          for (let i = 0; i < types.length; i++) {
+            if ((arg.type === types[i]) && typeof value !== types[i]) {
+              return message.reply(`invalid value for ${arg.name}. expected ${types[i]}`)
+            } else {
+              finalArgs[arg.name] = value
+            }
+          }
+        }
+      }
     }
 
-    message.replyDefer = async function (arg: string | MessageCreateOptions | MessagePayload) {
-      const msg = await this.reply(arg) as DeferableMessage
-      msg.deferDelete = deferDelete
 
-      return msg
-    }
 
-    await command.handler.call(bot, message) 
+    let messageCommand: MessageCommand<InputDefault> = Object.assign(message, {
+      command: commandAlias,
+      arguments: finalArgs,
+      deferDelete: deferDelete,
+      async send(this: MessageCommand ,arg: string | MessageCreateOptions | MessagePayload) {
+        const msg = (await this.channel.send(arg)) as DeferableMessage
+        msg.deferDelete = deferDelete
+  
+        return msg
+      },
+      async replyDefer (this: MessageCommand, arg: string | MessageCreateOptions | MessagePayload) {
+        const msg = await this.reply(arg) as DeferableMessage
+        msg.deferDelete = deferDelete
+  
+        return msg
+      }
+    })
+
+    await command.handler.call(bot, messageCommand) 
   }
 }
 
-export class Command<T extends boolean = boolean, R extends string = string, U extends string = string> extends BaseComponent<BaseHandler<boolean>> {
-  description: string;
+export class Command<T extends boolean = any, R extends string = string, U extends string = string, const MessageOptions extends InputDefault = InputDefault, S extends boolean = boolean> extends BaseComponent<BaseHandler<boolean, InputDefault, S>> {
+  description: string
   isActivated: boolean
   isSlash: T;
+  guildOnly: S = false as S
   data?: RESTPostAPIChatInputApplicationCommandsJSONBody
   permissions: PermissionsString[] = [];
   alias: string[] = []
+  arguments: InputDefault = []
 
   isMessage (): this is Command<false> {
     return this.isSlash !== true
-  } 
+  }
 
-  constructor(options: MessageOption<R, U> | ChatInteractionOption<R, U>) {
-    let { name, description, handler, isSlash, permissions, isActivated } = options
-    super(name, handler)
+  constructor(arg: MessageOption<R, U, MessageOptions, S> | ChatInteractionOption<R, U, S>) {
+    let { name, description, handler, isSlash, permissions, isActivated } = arg
+    super(name, handler as BaseHandler<boolean, InputDefault, S>)
     
-
-    const value = isSlash === undefined ? false : isSlash
-
     if (isActivated === false) {
       this.isActivated = isActivated
     } else {
@@ -172,16 +195,28 @@ export class Command<T extends boolean = boolean, R extends string = string, U e
     }
 
     this.description = description;
-    this.isSlash = value as T ;
+    this.isSlash = isSlash as T ;
     this.permissions = permissions || [];
+    if ('guildOnly' in arg) {
+      this.guildOnly = (arg.guildOnly) as S
+    }
     if (isSlash) {
       this.data = { name, description }
-      if ('options' in options ) {
-        this.data.options = options.options
+      if ('options' in arg ) {
+        this.data.options = arg.options
       }
+
+      if (!this.guildOnly) {
+        this.data.dm_permission = false
+      }
+
     } else  {
-      if ('alias' in options) {
-        this.alias = options.alias || []
+      if ('alias' in arg) {
+        this.alias = arg.alias || []
+      }
+
+      if ('arguments' in arg) {
+        this.arguments = arg.arguments || []
       }
     }
   }
