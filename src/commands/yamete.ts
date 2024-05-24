@@ -14,6 +14,7 @@ export default new Command({
   name: "yamete",
   description: "Call the bot and says 'Yamete kudasai!!'",
   permissions: ['Administrator'],
+  guildOnly: true,
   async handler (message) {
     const channel = message.member.voice.channel
     if (!channel) return;
@@ -43,3 +44,6 @@ export default new Command({
     })
   }
 })
+
+
+type test = Omit

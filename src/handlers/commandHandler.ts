@@ -2,7 +2,6 @@ import {
   Message,
   ChatInputCommandInteraction,
   PermissionsString,
-  MessageMentions,
   GuildMember,
   MessagePayload,
   MessageCreateOptions,
@@ -103,22 +102,23 @@ export class CommandHandler extends Handler<Command> {
 
   async runMessage(message: Message, bot: Bot<true>) {
     const { commandAlias, rest, prefix } = extract(message)
-    const command = this.messages.get(commandAlias) || this.getFromAlias(commandAlias)
-    if (!command) {
-      error(`command doesn't exist: ${commandAlias}`, __filename)
-      return
-    }
-
     let guildPrefix: string = process.env.PREFIX
 
     if (message.inGuild()) {
       guildPrefix = (await bot.GuildManager.ensure(message.guildId)).guildInfo.prefix || process.env.PREFIX
     }
+
+    if (guildPrefix !== prefix) {
+      return
+    }
+
+    const command = this.messages.get(commandAlias) || this.getFromAlias(commandAlias)
+    if (!command) {
+      error(`command doesn't exist: ${commandAlias}`, __filename)
+      return
+    }
     
-    if (
-      !(guildPrefix === prefix) ||
-      (command?.permissions.length && !(command?.permissions.some(perm => message.member?.permissions.has(perm))))
-    ) return 
+    if ((command?.permissions.length && !(command?.permissions.some(perm => message.member?.permissions.has(perm)))))return 
 
     if (!command.isActivated) {
       message.reply('command not implemented yet')
@@ -142,6 +142,8 @@ export class CommandHandler extends Handler<Command> {
               finalArgs[arg.name] = value
             }
           }
+
+          if (arg.type === 'user') {}
         }
       }
     }
@@ -167,6 +169,11 @@ export class CommandHandler extends Handler<Command> {
     })
 
     await command.handler.call(bot, messageCommand) 
+  }
+
+  addCommand<R extends string = string, U extends string = string, const MessageOptions extends InputDefault = InputDefault, S extends boolean = boolean> (options: MessageOption<R, U, MessageOptions, S> | ChatInteractionOption<R, U, S> ) {
+    //@ts-ignore
+    this.cache.set(options.name , new Command(options))
   }
 }
 

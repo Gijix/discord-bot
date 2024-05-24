@@ -1,15 +1,13 @@
 import { getVoiceConnection, joinVoiceChannel, VoiceConnection } from "@discordjs/voice";
-import { BaseGuildVoiceChannel } from "discord.js";
+import { BaseGuildVoiceChannel, If } from "discord.js";
 
 declare module 'discord.js' {
   interface BaseGuildVoiceChannel {
-    join (force: false): VoiceConnection | undefined
-    join (force: true): VoiceConnection
-    join (): VoiceConnection | undefined
+    join<T extends boolean> (force?: T): If<T, VoiceConnection, VoiceConnection | undefined>
   }
 }
-//@ts-ignore
-BaseGuildVoiceChannel.prototype.join = function (force) {
+
+BaseGuildVoiceChannel.prototype.join = (function (force) {
   const baseConnection = getVoiceConnection(this.guildId)
   let connect = () => joinVoiceChannel({
     adapterCreator: this.guild.voiceAdapterCreator,
@@ -24,6 +22,6 @@ BaseGuildVoiceChannel.prototype.join = function (force) {
   }
 
   return baseConnection ? undefined : connect()
-}
+} as <T extends boolean>(this: BaseGuildVoiceChannel , force?: T) => If<T, VoiceConnection, VoiceConnection | undefined>)
 
 export {}

@@ -6,7 +6,6 @@ export default new EventListener({
   async listener(interaction) {
     if (interaction.isChatInputCommand()) {
       const command = this.commandHandler.slashs.get(interaction.commandName)
-
       if (command) {
         if (((!interaction.inGuild()) && command.data?.dm_permission === false)) {
           return

@@ -1,4 +1,4 @@
-import { Base, Collection } from "discord.js";
+import { Collection } from "discord.js";
 import path from "path";
 import { readdir } from "fs/promises";
 import { BaseComponent } from "../baseComponent.js";

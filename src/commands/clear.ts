@@ -1,4 +1,4 @@
-import type { Message, Collection } from "discord.js";
+import { Message, Collection, ChannelType, ThreadChannel, ActionRow, ActionRowBuilder, ButtonBuilder } from "discord.js";
 import { Command } from "../handlers/commandHandler.js";
 import { filename } from 'dirname-filename-esm'
 import { error } from "../util/logger.js";
@@ -12,7 +12,8 @@ export default new Command({
   async handler (message) {
     let messages: Collection<string, Message>
 
-    if (message.channel.isDMBased() || message.channel.isThread()) return;
+    if (message.channel.isDMBased()) return;
+
     try {
       do {
         messages = (await message.channel.messages.fetch({limit:100}))
@@ -20,6 +21,9 @@ export default new Command({
       } while (messages.size >= 2)
     } catch(err){
       error(err, __filename)
+
+      if(message.channel.isThread()) return
+
       await message.channel.clone()
       await message.channel.delete()
     }

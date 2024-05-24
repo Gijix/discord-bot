@@ -9,7 +9,10 @@ import { connect } from './database.js';
 
 const __filename = filename(import.meta)
 const { Guilds, GuildMessages, GuildVoiceStates, MessageContent, DirectMessages } = GatewayIntentBits
-const bot = new Bot({ intents: [Guilds, GuildMessages, GuildVoiceStates, MessageContent, DirectMessages], partials: [Partials.Channel]});
+const bot = new Bot({ 
+  intents: [Guilds, GuildMessages, GuildVoiceStates, MessageContent, DirectMessages], 
+  partials: [Partials.Channel, Partials.Message]
+});
 
 try {
   envCheck()

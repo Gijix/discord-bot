@@ -32,7 +32,6 @@ import { EventHandler } from "./handlers/EventHandler.js";
 
 const __filename = filename(import.meta)
 
-
 const eventMethodLogMap = {
   [Events.MessageCreate]: 'logMsg',
   [Events.MessageUpdate]: 'logUpdateMsg',
