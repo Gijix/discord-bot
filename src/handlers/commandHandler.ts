@@ -6,7 +6,8 @@ import {
   MessagePayload,
   MessageCreateOptions,
   RESTPostAPIChatInputApplicationCommandsJSONBody,
-  APIApplicationCommandOption
+  APIApplicationCommandOption,
+  APIApplicationCommandBasicOption
 } from "discord.js";
 import Bot from "../bot.js";
 import { Handler } from "./AbstractHandler.js";
@@ -54,6 +55,7 @@ interface BaseCommandOption<T extends string, S extends string, R extends boolea
 
 interface ChatInteractionOption<T extends string, S extends string, U extends boolean = boolean> extends BaseCommandOption<T, S, false, true, U> {
   isSlash: true
+  subs?: SubCommandOptions[]
   options?: APIApplicationCommandOption[]
 }
 
@@ -172,7 +174,7 @@ export class CommandHandler extends Handler<Command> {
   }
 
   addCommand<R extends string = string, U extends string = string, const MessageOptions extends InputDefault = InputDefault, S extends boolean = boolean> (options: MessageOption<R, U, MessageOptions, S> | ChatInteractionOption<R, U, S> ) {
-    //@ts-ignore
+    // @ts-ignore
     this.cache.set(options.name , new Command(options))
   }
 }
@@ -181,6 +183,7 @@ export class Command<T extends boolean = any, R extends string = string, U exten
   description: string
   isActivated: boolean
   isSlash: T;
+  subs: SubCommandOptions[] = []
   guildOnly: S = false as S
   data?: RESTPostAPIChatInputApplicationCommandsJSONBody
   permissions: PermissionsString[] = [];
@@ -208,9 +211,13 @@ export class Command<T extends boolean = any, R extends string = string, U exten
       this.guildOnly = (arg.guildOnly) as S
     }
     if (isSlash) {
-      this.data = { name, description }
+      this.data = { name, description, options: [] }
       if ('options' in arg ) {
         this.data.options = arg.options
+      }
+
+      if ('subs' in arg) {
+        this.subs = arg.subs || []
       }
 
       if (!this.guildOnly) {
@@ -227,4 +234,11 @@ export class Command<T extends boolean = any, R extends string = string, U exten
       }
     }
   }
+}
+
+export interface SubCommandOptions {
+  name: string
+  description: string
+  options?: APIApplicationCommandBasicOption[],
+  handler: BaseHandler<false>
 }

@@ -5,7 +5,6 @@ import { success } from "../util/logger.js";
 export default new EventListener({
   name: 'ready',
   async listener() {
-    this.user.setStatus('idle');
     this.user.setPresence({
       status: "online",
       activities: [{

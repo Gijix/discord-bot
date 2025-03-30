@@ -12,7 +12,7 @@ interface EventOptions<T extends Key> {
   listener: BaseListener<T>
 }
 
-export class EventListener<T extends Key = Key> extends BaseComponent<BaseListener<T>> {
+export class EventListener<T extends Key = any> extends BaseComponent<BaseListener<T>> {
   override name: T
   once: boolean
   constructor (options: EventOptions<T>) {

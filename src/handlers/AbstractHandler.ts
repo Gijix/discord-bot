@@ -3,24 +3,29 @@ import path from "path";
 import { readdir } from "fs/promises";
 import { BaseComponent } from "../baseComponent.js";
 import { log } from "../util/logger.js";
+import { existsSync, mkdirSync } from "fs";
 
 export abstract class Handler<S extends BaseComponent> {
-  path: string
+  path?: string
   cache = new Collection<string, S>()
 
   constructor (...paths: string[]) {
-    this.path = path.join(process.cwd(),process.env.OUTDIR, ...paths)
+    if (paths.length > 0) {
+      this.path = path.join(...paths)
+    }
   }
 
   protected onLoad?(component: S): void;
 
   async load () {
-    this.cache = await this._load()
+    this.cache = this.cache.concat(await this._load())
 
     log(`loaded ${this.constructor.name} (loaded ${this.cache.size})`)
   }
 
   private async _load (...paths: string[]): Promise<Collection<string, S>> {
+    if (!this.path) throw new Error('no path provided')
+    if (!existsSync(this.path)) mkdirSync(this.path)
     const filenames = await readdir(path.join(this.path, ...paths), { withFileTypes: true });
     let preCache = new Collection<string, S>();
 
@@ -38,8 +43,7 @@ export abstract class Handler<S extends BaseComponent> {
       if (!filename.isFile()) {
         throw new Error('incorrect file type')
       }
-
-      const file = (await import("file://" + filepath)) as { default: any };
+      const file = (await import("file://" + process.cwd() + '/' + filepath)) as { default: any };
       const baseComponent = file.default as S
       if (!(Object.getPrototypeOf(baseComponent) !== BaseComponent.prototype)) {
         throw new Error(`import is not based on BaseComponent "${BaseComponent.name}"`)

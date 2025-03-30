@@ -6,12 +6,24 @@ import { error, warn } from './util/logger.js';
 import { filename } from 'dirname-filename-esm';
 import { envCheck } from './envCheck.js';
 import { connect } from './database.js';
+import './express.js';
 
 const __filename = filename(import.meta)
+
 const { Guilds, GuildMessages, GuildVoiceStates, MessageContent, DirectMessages } = GatewayIntentBits
-const bot = new Bot({ 
+const bot = new Bot({
   intents: [Guilds, GuildMessages, GuildVoiceStates, MessageContent, DirectMessages], 
   partials: [Partials.Channel, Partials.Message]
+}, {
+  paths: {
+    commandHandler: 'src/commands',
+    componentHandler: 'src/componentRows',
+    contextMenuHandler: 'src/contextMenuCommands',
+    modalHandler: 'src/modals',
+    eventHandler: 'src/events'
+  },
+  token: process.env.BOT_TOKEN,
+  clientId: process.env.CLIENT_ID,
 });
 
 try {

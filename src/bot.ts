@@ -18,6 +18,8 @@ import {
     TextBasedChannel,
     Events,
     Guild,
+    ApplicationCommandOptionType,
+    APIApplicationCommandSubcommandOption,
   } from "discord.js";
 import { ContextMenuHandler } from "./handlers/contextMenuHandler.js";
 import { ModalHandler } from "./handlers/modalHandler.js";
@@ -29,6 +31,18 @@ import { GuildDb, UserDb } from "./database.js";
 import { checkLogChannel } from "./decorator/checkLogChannel.js";
 import { ComponentHandler } from './handlers/componentHandler.js';
 import { EventHandler } from "./handlers/EventHandler.js";
+import { listeners } from './events.native.js'
+import { SocketManager } from "./lovense/socket.js";
+
+type HandlerName = 'commandHandler' | 'modalHandler' | 'contextMenuHandler' | 'componentHandler' | 'eventHandler'
+
+interface HandlerOptions { 
+  paths?: Partial<Record<HandlerName, string>>
+  token: string
+  clientId: string
+  databaseUrl?: string
+  prefix?: string
+}
 
 const __filename = filename(import.meta)
 
@@ -42,7 +56,10 @@ const eventMethodLogMap = {
 } as const
 
 class Bot<T extends boolean = boolean> extends Client<T> {
-  constructor (arg: ClientOptions) {
+  botToken: string
+  clientId: string
+  socketManager = new SocketManager()
+  constructor (arg: ClientOptions, handlerOptions: HandlerOptions) {
     super(arg);
     (Object.keys(eventMethodLogMap)).forEach((key) => {
       // @ts-ignore
@@ -56,6 +73,17 @@ class Bot<T extends boolean = boolean> extends Client<T> {
         }
       })
     })
+
+    if (handlerOptions && handlerOptions.paths) {
+      Object.keys(handlerOptions.paths).forEach(x => {
+        this[x].path = handlerOptions.paths![x]
+      })
+    }
+
+    this.clientId = handlerOptions.clientId
+    this.botToken = handlerOptions.token
+    this.prefix = handlerOptions.prefix || this.prefix
+    this.rest = new REST({ version: '10' }).setToken(this.botToken)
   }
 
   GuildManager = GuildDb
@@ -72,53 +100,66 @@ class Bot<T extends boolean = boolean> extends Client<T> {
       throw new Error("bot isn't setup correctly")
     }
 
-    return await super.login(token || process.env.BOT_TOKEN)
+    return await super.login(token || this.botToken)
   }
 
   async setup () {
-    await Promise.all([
-      this.commandHandler.load(), 
-      this.modalHandler.load(), 
-      this.contextMenuHandler.load(), 
-      this.componentHandler.load(), 
-    ])
-    
-    await Promise.all([await this.eventHandler.setup(this), await this.deployCommands()])
+    listeners.forEach(x => {
+      this.eventHandler.cache.set(x.id || x.name, x)
+    })
+    let handlers = [this.commandHandler, this.modalHandler, this.contextMenuHandler, this.componentHandler].filter(x => x.path)
+    await Promise.all(handlers.map(async(x) => x.load()))
+    if (this.eventHandler.path) {
+      await this.eventHandler.setup(this)
+    }
+    await Promise.all([await this.deployCommands()])
     this.isSetup = true
   }
 
-  commandHandler = new CommandHandler('commands')
-  contextMenuHandler = new ContextMenuHandler('contextMenuCommands')
-  componentHandler = new ComponentHandler('componentRows')
-  modalHandler = new ModalHandler('modals')
-  eventHandler = new EventHandler('events')
+  commandHandler = new CommandHandler()
+  contextMenuHandler = new ContextMenuHandler()
+  componentHandler = new ComponentHandler()
+  modalHandler = new ModalHandler()
+  eventHandler = new EventHandler()
 
+  /** @deprecated */
   playerManager = new PlayerManager(this)
 
   private get applicationCommandsData () {
-    const commandsSlash = this.commandHandler.slashs.filter(slash => slash.isActivated).map(command => command.data)
+    const commandsSlash = this.commandHandler.slashs.filter(slash => slash.isActivated).map(x => {
+      const options = x.subs.map(x => ({ name: x.name, description: x.description, options: x.options, type: ApplicationCommandOptionType.Subcommand})) as APIApplicationCommandSubcommandOption[]
+      if (x.data) {
+        if (x.data.options) x.data.options = [...x.data.options, ...options]
+        else x.data.options = options
+      }
+
+      return x.data
+    })
+
     const contextMenuCommands = this.contextMenuHandler.cache.map((command) => command.data)
 
     return  [...commandsSlash, ...contextMenuCommands]
   }
 
-  rest = new REST({ version: '10' }).setToken(process.env.BOT_TOKEN)
+  rest: REST
 
   async deployCommands (guildId?: string) {
+    let appCommandsData = this.applicationCommandsData
+    if (appCommandsData.length <= 0) return
     try {
       const data = await this.rest.put(
         guildId ?
-          Routes.applicationGuildCommands(process.env.CLIENT_ID, guildId) :
-          Routes.applicationCommands(process.env.CLIENT_ID),
-        { body: this.applicationCommandsData },
+          Routes.applicationGuildCommands(this.clientId, guildId) :
+          Routes.applicationCommands(this.clientId),
+        { body: appCommandsData },
       )
-      log(`successfuly deploy ${Array.isArray(data) ? data.length : 1 } application (/) commands on ${guildId}.`);         
+      log(`successfuly deploy ${Array.isArray(data) ? data.length : 1 } application (/) commands.`);         
     } catch(err){
-      error(err, __filename)
+      error(err, __filename, true)
     }
   }
 
-  prefix: string = process.env.PREFIX || '$'
+  prefix = '$'
 
   join(guild: Guild, channelId: string): VoiceConnection | undefined
   join(guild: Guild, channelId: string, force: true): VoiceConnection
@@ -178,7 +219,7 @@ class Bot<T extends boolean = boolean> extends Client<T> {
   /**
    *  create embed message
    */
-  createEmbed(color: ColorResolvable, title: string, author: string, ...fields: EmbedField[]): EmbedBuilder {
+  createEmbed(color: ColorResolvable, title: string, author: string, img?: string, ...fields: EmbedField[]): EmbedBuilder {
     const time = this.eventTime;
     const embed = new EmbedBuilder({
       title,
@@ -189,6 +230,9 @@ class Bot<T extends boolean = boolean> extends Client<T> {
       footer: { text: `${time.hours} H ${time.minutes}  -  ${time.day}/${time.month}/${time.year}`}
     })
       .setColor(color)
+    if (img) {
+      embed.setImage(img)
+    }
     return embed
   }
 
@@ -205,7 +249,7 @@ class Bot<T extends boolean = boolean> extends Client<T> {
     const logChannel = await this.getGuildLogChannel(guildId)
 
     if (logChannel) {
-      await logChannel.send({ embeds: [data]})
+      return await logChannel.send({ embeds: [data] })
     }
   }
 
@@ -224,6 +268,7 @@ class Bot<T extends boolean = boolean> extends Client<T> {
       color,
       title,
       message.id,
+      undefined,
       { name: "User", value: `<@${message.member!.user.id}>`, inline: true },
       { name: "Message", value: message.content, inline: true },
       { name: "Channel", value: (message.channel as TextChannel).name, inline: true }
@@ -246,6 +291,7 @@ class Bot<T extends boolean = boolean> extends Client<T> {
         "Orange",
         "Message Deleted",
         message.id,
+        undefined,
         { name: "Author", value: `<@${author.id}>`, inline: true },
         { name: "Message", value: message.content, inline: true },
         { name: "Channel", value: (message.channel as TextChannel).name, inline: true },
@@ -265,6 +311,7 @@ class Bot<T extends boolean = boolean> extends Client<T> {
       "Blue",
       "Message Updated",
       newMessage.id,
+      undefined,
       { name: "Author", value: `<@${newMessage.author.id}>`, inline: true },
       { name: "Old Message", value: oldMessage.content, inline: true },
       { name: `New Message`, value: newMessage.content, inline: true },
@@ -284,6 +331,7 @@ class Bot<T extends boolean = boolean> extends Client<T> {
       "Green",
       message,
       member.id,
+      undefined,
       { name: "User", value: `<@${member.id}>`, inline: true },
       { name: "As", value: member.user.username, inline: true }
     );
@@ -301,6 +349,7 @@ class Bot<T extends boolean = boolean> extends Client<T> {
           "Blue",
           "User Switch voiceChat",
           newState.member!.id,
+          undefined,
           { name: "User", value: `<@${newState.member!.id}>`, inline: false },
           { name: "Old channel", value: oldstate.channel!.name, inline: true },
           { name: "New Channel", value: newState.channel!.name, inline: true }
@@ -310,6 +359,7 @@ class Bot<T extends boolean = boolean> extends Client<T> {
           "Green",
           "User leave voiceChat",
           oldstate.member!.id,
+          undefined,
           { name: "User", value: `<@${oldstate.member!.id}>`, inline: true },
           { name: "Channel", value: oldstate.channel!.name, inline: true }
         );
@@ -319,6 +369,7 @@ class Bot<T extends boolean = boolean> extends Client<T> {
         "Green",
         "User join a voiceChat",
         newState.member!.id,
+        undefined,
         { name: "User", value: `<@${newState.member!.id}>`, inline: true },
         { name: "Channel", value: newState.channel!.name, inline: true }
       );

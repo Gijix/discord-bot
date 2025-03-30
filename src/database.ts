@@ -1,4 +1,4 @@
-import { Guild, Prisma, PrismaClient, User } from "@prisma/client";
+import { Guild, Prisma, PrismaClient, User, UserLovense } from "@prisma/client";
 
 const prismaClient = new PrismaClient()
 
@@ -75,6 +75,7 @@ export class UserDb {
     if (!user) {
       return new this(await this.create(discordId))
     }
+
     return new this(user)
   }
 
@@ -84,12 +85,85 @@ export class UserDb {
     }})
   }
 
-  hasToy () {
-    return Boolean(this.userInfo.loveToyId)
+  async lovense () {
+    const data = await prismaClient.userLovense.findUnique({
+      where: {
+        userId: this.userInfo.id
+      }
+    })
+
+    if (data) return new UserLovenseDb(data)
+  }
+}
+
+export class UserLovenseDb {
+  constructor(public lovenseInfo: UserLovense) {}
+
+  static async getByDiscordId (id: string) {
+    return await prismaClient.user.findUnique({
+      where: {
+        discordId: id
+      }
+    }).lovense()
   }
 
-  setToy (loveToyId: string) {
-    return this.updateUser({ loveToyId })
+  static async ensure (user: UserDb, toyId: string) {
+    const userLovense = await prismaClient.userLovense.findUnique({
+      where: {
+        userId: user.userInfo.id
+      }
+    })
+
+    if (userLovense) return new this(userLovense)
+
+    const data = await prismaClient.userLovense.create({
+      data: {
+        userId: user.userInfo.id,
+        lovenseToyId: toyId
+      }
+    })
+
+    return new this(data)
+  }
+
+  async isAuthorized (userId: string) {
+    return Boolean(await prismaClient.userLovenseConnect.findFirst({
+      where: {
+        userLovenseId: this.lovenseInfo.id,
+        connectedUserLovenseId: userId
+      }
+    }))
+  }
+
+  async deleteAuthorization (userId: string) {
+    await prismaClient.userLovenseConnect.deleteMany({
+      where: {
+        userLovenseId: this.lovenseInfo.id,
+        connectedUserLovenseId: userId
+      }
+    })
+  }
+
+  async authorizePlaying (userId: string) {
+    await prismaClient.userLovenseConnect.create({
+      data: {
+        userLovenseId: this.lovenseInfo.id,
+        connectedUserLovenseId: userId
+      }
+    })
+  }
+
+  updateLU (data: Prisma.UserLovenseUpdateInput) {
+    return prismaClient.userLovense.update({ 
+      where: {
+        id: this.lovenseInfo.id
+      },
+      data
+     })
+  }
+
+  async setToy (id: string) {
+    await this.updateLU( { lovenseToyId: id })
   }
 }
 

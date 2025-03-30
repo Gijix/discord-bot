@@ -6,12 +6,15 @@ export default new Command({
   permissions: ["SendMessages"],
   isSlash: true,
   async handler (interaction) {
-    const SlashList = this.commandHandler.slashs.filter((command) => command.isActivated).reduce((acc, com) => acc.concat("``"+com.name+"`` "+com.description+"\n" ) , '')
+    const inGuild = interaction.inGuild()
+    const isEnabled = (command: Command) => command.guildOnly ? inGuild : true
+    const SlashList = this.commandHandler.slashs.filter((command) => command.isActivated && isEnabled(command) ).reduce((acc, com) => acc.concat("``"+com.name+"`` "+com.description+"\n" ) , '')
     const MessageList = this.commandHandler.messages.filter((command) => command.isActivated).reduce((acc, com) => acc.concat("``"+this.prefix+com.name+"`` "+com.description+"\n" ) , '')
     const embed = this.createEmbed(
       "Purple",
       "Command List",
       this.user.username,
+      undefined,
       {
         name: "Messages",
         value: MessageList,

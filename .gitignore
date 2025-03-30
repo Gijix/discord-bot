@@ -45,3 +45,5 @@ Temporary Items
 dist/
 
 prisma/dev.db
+
+.vercel

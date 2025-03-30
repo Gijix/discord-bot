@@ -50,7 +50,7 @@ function seekStream (stream: internal.Readable, seek: number): internal.Readable
 		],
 	});
 	const s16le = stream.pipe(transcoder);
-	const opus = s16le.pipe(new Prism.opus.Encoder({ rate: 48000, channels: 2, frameSize: 960 }));
+	const opus = s16le. pipe(new Prism.opus.Encoder({ rate: 48000, channels: 2, frameSize: 960 }));
 
 	return opus
 }
