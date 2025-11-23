@@ -8,6 +8,7 @@ import { envCheck } from './envCheck.js';
 import { connect } from './database.js';
 import './express.js';
 
+
 const __filename = filename(import.meta)
 
 const { Guilds, GuildMessages, GuildVoiceStates, MessageContent, DirectMessages } = GatewayIntentBits
@@ -41,6 +42,7 @@ bot.on('error', (err) => {
 })
 
 process.on('SIGINT', (signal) => {
+  bot.voice.adapters.forEach(adapter => adapter.destroy())
   warn( "shutting down from SIGINT" );
   console.log({signal})
   process.exit(0);

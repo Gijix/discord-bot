@@ -1,9 +1,6 @@
 import { error } from "console";
 import { EventListener } from "./handlers/EventHandler.js";
 import { filename } from "dirname-filename-esm";
-import { ChatInputCommandInteraction } from "discord.js";
-import { Command, SubCommandOptions } from "./handlers/commandHandler.js";
-import Bot from "./bot.js";
 
 const __filename = filename(import.meta)
 
@@ -17,7 +14,6 @@ const guildCreateListener = new EventListener({
 const interactionCreateListener = new EventListener({
   name: 'interactionCreate',
   async listener(interaction) {
-    console.log('interaction create')
     if (interaction.isChatInputCommand()) {
       const command = this.commandHandler.slashs.get(interaction.commandName)
       if (command) {

@@ -10,7 +10,12 @@ import play, {
   SpotifyAlbum,
   SpotifyPlaylist,
   SpotifyTrack,
-} from "play-dl";
+  Deezer,
+  DeezerTrack,
+  DeezerAlbum,
+  DeezerPlaylist,
+  InfoData
+} from "./play-dl";
 import Bot from "./bot.js";
 import { 
   createAudioPlayer,
@@ -24,36 +29,23 @@ import { MessageCommand } from "./handlers/commandHandler.js";
 import { error } from "./util/logger.js";
 import { filename } from "dirname-filename-esm";
 import { Collection, GuildMember } from "discord.js";
-import Prism from 'prism-media'
-import internal from "stream";
 import { InputDefault } from "./util/arguments.js";
+import { spawn } from "node:child_process";
+
 
 const __filename = filename(import.meta)
 
 interface Media {
   audioRessource: AudioResource
-  streamInfo: YouTube
+  streamInfo: TrackInfo
 }
 
-type MediaType = YouTube | Spotify | SoundCloud
-
-function seekStream (stream: internal.Readable, seek: number): internal.Readable {
-	const transcoder = new Prism.FFmpeg({
-		args: [
-			'-analyzeduration', '0',
-			'-loglevel', '0',
-			'-f', 's16le',
-			'-ar', '48000',
-			'-ac', '2',
-			'-ss', seek.toString(),
-			'-ab', '320',
-		],
-	});
-	const s16le = stream.pipe(transcoder);
-	const opus = s16le. pipe(new Prism.opus.Encoder({ rate: 48000, channels: 2, frameSize: 960 }));
-
-	return opus
+interface TrackInfo {
+  url: string
+  name: string
 }
+
+type MediaType = YouTube | Spotify | SoundCloud | Deezer
 
 let soId = await play.getFreeClientID()
 await play.setToken({
@@ -62,9 +54,11 @@ await play.setToken({
   }
 })
 
+
+
 export class MusicPlayer {
   constructor (public guildId: string, public client: Bot) {
-    this.player.on(AudioPlayerStatus.Idle, () => {
+    this.player.on(AudioPlayerStatus.Idle, async() => {
       if (this.isLooping && this.currentAudio) {
         this.player.play(this.currentAudio.audioRessource)
 
@@ -72,7 +66,7 @@ export class MusicPlayer {
       }
 
       if (this.queue.length > 0) {
-        this.playNext();
+        await this.playNext();
       }
     })
 
@@ -81,6 +75,7 @@ export class MusicPlayer {
     })
   }
 
+  LastPushedInQueue = false
   player = createAudioPlayer({
     behaviors: {
       noSubscriber: NoSubscriberBehavior.Pause
@@ -88,7 +83,7 @@ export class MusicPlayer {
   })
 
   currentAudio: Media | undefined
-  queue: Media[] = []
+  queue: TrackInfo[] = []
   isLooping = false
 
   checkPresence(message: MessageCommand<InputDefault, true>) {
@@ -97,55 +92,83 @@ export class MusicPlayer {
     return Boolean(channelId) && (channelId === botChannelId)
   }
 
-  playNext() {
+  async playNext() {
     const nextTrack = this.queue.shift()
 
     if (nextTrack) {
-      this.player.play(nextTrack.audioRessource)
-      this.currentAudio = nextTrack
+      const audioRessource = await this.createAudioResource(nextTrack.url)
+      this.player.play(audioRessource)
+      this.currentAudio = { audioRessource, streamInfo: nextTrack}
     }
 
     return this.player;
   }
 
-  async getAudioRessource (streamInfo: MediaType, seek?: number) {
-    let data
+  async createAudioResource (url: string, seek?: number) {
+    const process = spawn('yt-dlp', [
+      '-f', 'bestaudio',
+      '-o', '-',                  // Output to stdout
+      '--quiet',
+      '--no-playlist',
+      url
+    ], {
+      stdio: ['ignore', 'pipe', 'ignore']
+    });
+    // const stream = await play.stream(url, {
+    //   discordPlayerCompatibility: true,
+    //   quality: 2
+    // })
+    process.on('close', () => console.log('close'))
+    process.on('exit', () => console.log('exit'))
+    process.on('error', (err) => console.log(err))
+    return createAudioResource(process.stdout, { inlineVolume: true })
+  }
 
+  async getYoutubeVideo (media: YouTubeVideo | DeezerTrack | SoundCloudTrack | SpotifyTrack) {
+    let url = media.url
+    if (media instanceof SpotifyTrack || media instanceof SoundCloudTrack) {
+      url = (await play.search(media.name))[0].url
+      return { url, name: media.name }
+    } else if (media instanceof DeezerTrack) {
+      url = (await play.search(media.title))[0].url
+      return { url, name: media.title }
+    }
+
+    return { url, name: media.title! }
+  }
+
+  async getDataFromMedia (streamInfo: MediaType) {
+    let data
     if (this.isSoundClound(streamInfo)) {
       data = await this.getFromSoundCloud(streamInfo)
     } else if (this.isYoutube(streamInfo)) {
       data = await this.getFromYoutube(streamInfo)
-    } else {
+    } else if (this.isSpotify(streamInfo)) {
       data = await this.getFromSpotify(streamInfo)
+    } else {
+      data = await this.getFromDeezer(streamInfo)
     }
+    console.log(data)
 
-    let url = data.url
-
-    if (data instanceof SpotifyTrack) {
-      url = (await play.search(data.name))[0].url
-    }
-
-    const stream = await play.stream(url, { seek })
-
-    return createAudioResource(stream.stream, { inputType: stream.type, inlineVolume: true })
+    return Promise.all((Array.isArray(data) ? data : [data]).map(x => this.getYoutubeVideo(x)))
   }
 
-  async getFromSoundCloud (streamInfo: SoundCloud): Promise<SoundCloudTrack> {
-    return streamInfo instanceof SoundCloudPlaylist ? (await streamInfo.all_tracks())[0] : streamInfo
+  async getFromSoundCloud (streamInfo: SoundCloud): Promise<SoundCloudTrack | SoundCloudTrack[]> {
+    return streamInfo instanceof SoundCloudPlaylist ? (await streamInfo.all_tracks()) : streamInfo
   }
 
-  async getFromSpotify (streamInfo: Spotify): Promise<SpotifyTrack> {
+  async getFromSpotify (streamInfo: Spotify): Promise<SpotifyTrack | SpotifyTrack[]> {
     return streamInfo instanceof SpotifyAlbum || streamInfo instanceof SpotifyPlaylist ? 
-      (await streamInfo.all_tracks())[0] : 
+      (await streamInfo.all_tracks()) : 
       streamInfo
   }
 
-  async getFromYoutube(streamInfo: YouTube): Promise<YouTubeVideo> {
-    let playMedia: YouTubeVideo
+  async getFromYoutube(streamInfo: YouTube): Promise<YouTubeVideo | YouTubeVideo[]> {
+    let playMedia: YouTubeVideo | YouTubeVideo[]
     if (streamInfo instanceof YouTubeChannel) {
-      playMedia = (await play.search(streamInfo.name!, { limit: 1 }))[0]
+      playMedia = (await play.search(streamInfo.name!, { limit: 5 }))
     } else if (streamInfo instanceof YouTubePlayList) {
-      playMedia = (await play.search(streamInfo.title!, { limit: 1 }))[0]
+      playMedia = (await play.search(streamInfo.title!))
     } else {
       playMedia = streamInfo
     }
@@ -153,24 +176,49 @@ export class MusicPlayer {
     return playMedia
   }
 
-  async getMedia(baseUrl: string): Promise<YouTubeVideo | Spotify | SoundCloud | null> {
+  async getFromDeezer(streamInfo: Deezer): Promise<DeezerTrack | DeezerTrack[]> {
+    let playMedia: DeezerTrack | DeezerTrack[]
+    if (streamInfo instanceof DeezerAlbum){
+      playMedia = await streamInfo.all_tracks()
+    } else if (streamInfo instanceof DeezerPlaylist) {
+      playMedia = await streamInfo.all_tracks()
+    } else {
+      playMedia = streamInfo
+    }
+
+    return playMedia
+  }
+
+  async getMedia(baseUrl: string): Promise<YouTube | Spotify | SoundCloud | Deezer | null> {
 
     const validation = await play.validate(baseUrl.replace('intl-fr/', ''));
     if (!validation) {
       console.log("error returning with validation " + validation);
       return null
     }
+    
+    if (play.yt_validate(baseUrl)) {
+      if (validation === 'yt_playlist') {
+        return await play.playlist_info(baseUrl)
+      } else if (validation === 'yt_video') {
+        return (await play.video_info(baseUrl)).video_details
+      }
+    }
 
-    if (validation.startsWith("yt") || validation === 'search') {
+    if (validation === 'search') {
       return (await play.search(baseUrl))[0];
     } else if (validation.startsWith("so")) {
       return await play.soundcloud(baseUrl);
     } else if (validation.startsWith("sp")) {
+      console.log(play.is_expired())
       if (play.is_expired()) {
         await play.refreshToken()
+        console.log('refreshed')
       }
 
       return await play.spotify(baseUrl);
+    } else if (validation.startsWith("dz")) {
+      return await play.deezer(baseUrl)
     }
 
     return null
@@ -189,23 +237,30 @@ export class MusicPlayer {
     }
 
     const connection = userChannel.join(true)
+    
     const media = (await this.getMedia(query));
+    console.log('getted media')
   
     if (!media) {
       throw new Error('invalid media')
     }
 
-    const audioRessource = await this.getAudioRessource(media, seek)
+    const tracks = await this.getDataFromMedia(media)
 
     if (this.player.state.status !== AudioPlayerStatus.Idle ) {
-      this.queue.push({ audioRessource, streamInfo: media as YouTube })
+      this.queue.push(...tracks)
+      this.LastPushedInQueue = true
     } else {
       connection.subscribe(this.player)
-    
+      console.log('subscribing')
+      let track = tracks.shift()!
+      this.queue.push(...tracks)
+      console.log(track.url)
+      const audioRessource = await this.createAudioResource(track.url)
       this.player.play(audioRessource)
+      this.LastPushedInQueue = false
+      this.currentAudio = { audioRessource, streamInfo: track }
     }
-
-    this.currentAudio = { audioRessource, streamInfo: media as YouTube }
 
     return this.player;
   }
@@ -242,13 +297,13 @@ export class MusicPlayer {
     if (!this.checkPresence(message)) return this.player;
 
     if (this.currentAudio) {
-      const audioRessource = await this.getAudioRessource(this.currentAudio.streamInfo, seek)
+      const audioRessource = await this.createAudioResource(this.currentAudio.streamInfo.url, seek)
       this.player.play(audioRessource)
       this.currentAudio.audioRessource = audioRessource
     }
   }
 
-  private compareMedia (media: MediaType, constructors: Function[]) {
+  private compareMedia<T extends new (...args: any[]) => any> (media: MediaType, constructors: T[]) {
     return constructors.some(construct => media instanceof construct)
   }
 

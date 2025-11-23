@@ -33,6 +33,7 @@ import { ComponentHandler } from './handlers/componentHandler.js';
 import { EventHandler } from "./handlers/EventHandler.js";
 import { listeners } from './events.native.js'
 import { SocketManager } from "./lovense/socket.js";
+import { createDiscordJSAdapter } from "./util/VoiceChannel.js";
 
 type HandlerName = 'commandHandler' | 'modalHandler' | 'contextMenuHandler' | 'componentHandler' | 'eventHandler'
 
@@ -112,7 +113,7 @@ class Bot<T extends boolean = boolean> extends Client<T> {
     if (this.eventHandler.path) {
       await this.eventHandler.setup(this)
     }
-    await Promise.all([await this.deployCommands()])
+    // await Promise.all([await this.deployCommands()])
     this.isSetup = true
   }
 
@@ -165,24 +166,21 @@ class Bot<T extends boolean = boolean> extends Client<T> {
   join(guild: Guild, channelId: string, force: true): VoiceConnection
   join(guild: Guild, channelId: string, force: false): VoiceConnection | undefined
   join(guild: Guild, channelId: string, force?: boolean): VoiceConnection | undefined {
-    const join = () => joinVoiceChannel({
-      guildId: guild.id,
-      channelId: channelId,
-      adapterCreator: guild.voiceAdapterCreator
-    })
-    const connection = getVoiceConnection(guild.id)
-
-    if (connection?.joinConfig.channelId === channelId) {
-      return connection
-    }
-
-    if (force) {
-      connection?.destroy()
-
-      return join()
-    }
-
-    return connection ? undefined : join()
+    let channel = this
+      const baseConnection = getVoiceConnection(guild.id)
+      let connect = () => joinVoiceChannel({
+        adapterCreator: createDiscordJSAdapter(guild),
+        channelId: channelId,
+        guildId: guild.id,
+      })
+    
+      if (force) {
+        baseConnection?.destroy()
+    
+        return connect()
+      }
+    
+      return baseConnection ? undefined : connect()
   }
 
   /**
