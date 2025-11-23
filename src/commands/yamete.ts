@@ -7,13 +7,8 @@ import {
   AudioPlayerStatus, 
   NoSubscriberBehavior,
   StreamType,
-  demuxProbe,
-  entersState,
-  VoiceConnectionStatus,
 } from '@discordjs/voice';
-import Stream, { Readable } from 'stream';
-import { FFmpeg } from 'prism-media';
-import { handleAudio } from '../util/VoiceChannel.js';
+import Stream from 'stream';
 
 export default new Command({
   name: "yamete",

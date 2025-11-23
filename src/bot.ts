@@ -15,11 +15,11 @@ import {
     REST,
     Routes,
     APIEmbed,
-    TextBasedChannel,
     Events,
     Guild,
     ApplicationCommandOptionType,
     APIApplicationCommandSubcommandOption,
+    GuildTextBasedChannel,
   } from "discord.js";
 import { ContextMenuHandler } from "./handlers/contextMenuHandler.js";
 import { ModalHandler } from "./handlers/modalHandler.js";
@@ -30,7 +30,7 @@ import { PlayerManager } from "./musicPlayer.js";
 import { GuildDb, UserDb } from "./database.js";
 import { checkLogChannel } from "./decorator/checkLogChannel.js";
 import { ComponentHandler } from './handlers/componentHandler.js';
-import { EventHandler } from "./handlers/EventHandler.js";
+import { EventHandler, EventListener } from "./handlers/EventHandler.js";
 import { listeners } from './events.native.js'
 import { SocketManager } from "./lovense/socket.js";
 import { createDiscordJSAdapter } from "./util/VoiceChannel.js";
@@ -106,7 +106,7 @@ class Bot<T extends boolean = boolean> extends Client<T> {
 
   async setup () {
     listeners.forEach(x => {
-      this.eventHandler.cache.set(x.id || x.name, x)
+      this.eventHandler.cache.set(x.id || x.name, x as EventListener)
     })
     let handlers = [this.commandHandler, this.modalHandler, this.contextMenuHandler, this.componentHandler].filter(x => x.path)
     await Promise.all(handlers.map(async(x) => x.load()))
@@ -166,7 +166,6 @@ class Bot<T extends boolean = boolean> extends Client<T> {
   join(guild: Guild, channelId: string, force: true): VoiceConnection
   join(guild: Guild, channelId: string, force: false): VoiceConnection | undefined
   join(guild: Guild, channelId: string, force?: boolean): VoiceConnection | undefined {
-    let channel = this
       const baseConnection = getVoiceConnection(guild.id)
       let connect = () => joinVoiceChannel({
         adapterCreator: createDiscordJSAdapter(guild),
@@ -239,7 +238,7 @@ class Bot<T extends boolean = boolean> extends Client<T> {
     const id = guild.guildInfo.logCanalId
     if (id) {
       const guild = await this.guilds.fetch(guildId)
-      return guild.channels.cache.get(id) as TextBasedChannel
+      return guild.channels.cache.get(id) as GuildTextBasedChannel
     }
   }
 

@@ -6,6 +6,8 @@ import {
   ActionRowBuilder,
   TextInputStyle,
   ModalActionRowComponentBuilder,
+  TextInputComponentData,
+  ComponentType,
 } from "discord.js";
 import { BaseComponent } from "../baseComponent.js";
 import { Handler } from "./AbstractHandler.js";
@@ -69,7 +71,9 @@ export class ModalHandler extends Handler<Modal> {
 
     const fieldList: Record<string, string> = {}
     interaction.fields.fields.forEach((textInput) => {
-      fieldList[textInput.customId] = textInput.value 
+      if ('value' in textInput) {
+        fieldList[textInput.customId] = textInput.value
+      }
     })
 
     await modal.handler.call(bot, fieldList, interaction)

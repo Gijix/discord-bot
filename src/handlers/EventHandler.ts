@@ -24,11 +24,11 @@ export class EventListener<T extends Key = any> extends BaseComponent<BaseListen
 }
 
 
-export class EventHandler extends Handler<EventListener> {
+export class EventHandler extends Handler<EventListener<keyof ClientEvents>> {
   async setup (client: Bot) {
     await this.load()
     this.cache.forEach(event => {
-      client[event.once ? 'once' : 'on'](event.name, event.handler.bind(client))
+      client[event.once ? 'once' : 'on'](event.name, event.handler)
     })
   }
 }

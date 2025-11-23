@@ -12,10 +12,7 @@ import { Handler } from "./AbstractHandler.js";
 type CurrentInteraction<T> = T extends 2 ? UserContextMenuCommandInteraction : MessageContextMenuCommandInteraction 
 type ContextMenuHandlerType<T extends ContextMenuCommandType> = (this: Bot, interaction: CurrentInteraction<T>) => Promise<void>
 
-interface ContextMenuOptions<T extends ContextMenuCommandType> extends RESTPostAPIContextMenuApplicationCommandsJSONBody {
-  type: T
-  handler: ContextMenuHandlerType<T>
-}
+type ContextMenuOptions<T extends ContextMenuCommandType> = RESTPostAPIContextMenuApplicationCommandsJSONBody & { type: T; handler: ContextMenuHandlerType<T>}
 
 export class ContextMenuCommand<T extends ContextMenuCommandType = ContextMenuCommandType> extends BaseComponent<ContextMenuHandlerType<ContextMenuCommandType>> {
   type: T

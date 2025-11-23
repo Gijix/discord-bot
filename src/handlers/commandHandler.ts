@@ -7,7 +7,8 @@ import {
   MessageCreateOptions,
   RESTPostAPIChatInputApplicationCommandsJSONBody,
   APIApplicationCommandOption,
-  APIApplicationCommandBasicOption
+  APIApplicationCommandBasicOption,
+  PartialTextBasedChannelFields
 } from "discord.js";
 import Bot from "../bot.js";
 import { Handler } from "./AbstractHandler.js";
@@ -17,13 +18,14 @@ import { filename } from 'dirname-filename-esm';
 import { setTimeout } from "timers/promises";
 import { ArgsFunc, InputDefault } from "../util/arguments.js";
 import parse from 'yargs-parser'
+import { channel } from "diagnostics_channel";
 
 const __filename = filename(import.meta)
 
 type NonEmptyString<T extends string> = T extends '' ? never : T;
 
 type DeferableMessage<InGuild extends boolean = any> = Message<InGuild> & {
-  deferDelete (delay?: number): Promise<Message<InGuild>> 
+  deferDelete (delay?: number): Promise<Message<InGuild>>
 }
 
 async function deferDelete<InGuild extends boolean = false>(this: DeferableMessage<InGuild>, delay = 0): Promise<Message<InGuild>> {
@@ -34,7 +36,7 @@ async function deferDelete<InGuild extends boolean = false>(this: DeferableMessa
 export interface MessageCommand<Options extends InputDefault = never, InGuild extends boolean = any> extends DeferableMessage<InGuild> {
   command: string;
   arguments: Options extends InputDefault ? ArgsFunc<Options> : never;
-  send (arg: string | MessagePayload | MessageCreateOptions): Promise<DeferableMessage<InGuild>>
+  send (arg: string | MessagePayload | MessageCreateOptions): Promise<DeferableMessage<InGuild> | undefined>
   member: InGuild extends true ? GuildMember : GuildMember | null
   replyDefer (arg: string | MessagePayload | MessageCreateOptions): Promise<DeferableMessage<InGuild>>
 };
@@ -151,16 +153,16 @@ export class CommandHandler extends Handler<Command> {
     }
 
 
-
     let messageCommand: MessageCommand<InputDefault> = Object.assign(message, {
       command: commandAlias,
       arguments: finalArgs,
       deferDelete: deferDelete,
       async send(this: MessageCommand ,arg: string | MessageCreateOptions | MessagePayload) {
-        const msg = (await this.channel.send(arg)) as DeferableMessage
-        msg.deferDelete = deferDelete
-  
-        return msg
+        if ('send' in this.channel) {
+          const msg = (await this.channel.send(arg)) as DeferableMessage
+          msg.deferDelete = deferDelete
+           return msg
+        }
       },
       async replyDefer (this: MessageCommand, arg: string | MessageCreateOptions | MessagePayload) {
         const msg = await this.reply(arg) as DeferableMessage
