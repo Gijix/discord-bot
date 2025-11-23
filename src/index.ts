@@ -8,7 +8,6 @@ import { envCheck } from './envCheck.js';
 import { connect } from './database.js';
 import './express.js';
 
-
 const __filename = filename(import.meta)
 
 const { Guilds, GuildMessages, GuildVoiceStates, MessageContent, DirectMessages } = GatewayIntentBits

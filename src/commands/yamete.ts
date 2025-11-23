@@ -8,7 +8,12 @@ import {
   NoSubscriberBehavior,
   StreamType,
   demuxProbe,
+  entersState,
+  VoiceConnectionStatus,
 } from '@discordjs/voice';
+import Stream, { Readable } from 'stream';
+import { FFmpeg } from 'prism-media';
+import { handleAudio } from '../util/VoiceChannel.js';
 
 export default new Command({
   name: "yamete",
@@ -24,32 +29,37 @@ export default new Command({
     if (!connection) {
       return message.reply('bot already in a voice channel')
     }
+
     const player = createAudioPlayer({
       behaviors: {
         noSubscriber: NoSubscriberBehavior.Pause
       }
     })
-
+   
     connection.subscribe(player)
-    console.log(path.join(process.cwd(), "sounds", "yamete.ogg"))
-    const stream = createReadStream(path.join(process.cwd(), "sounds", "yamete.ogg"))
 
-    await demuxProbe(stream).then(info => console.log(info.type))
-    const audioRessourse = createAudioResource(createReadStream(path.join(process.cwd(), "sounds", "yamete.ogg")),
-    {
+    const filePath = path.join(process.cwd(), 'sounds', 'yamete.ogg');
+    let inputStream: Stream.Readable = createReadStream(filePath)
+
+    inputStream.resume();
+
+    const resource = createAudioResource(inputStream, {
+      inputType: StreamType.Arbitrary,  // Raw → auto-encode Opus, bye désync
       inlineVolume: true,
-      inputType: StreamType.Arbitrary,
-    })
-    console.log('gonna play')
+      // BUFFER MAGIC (fix 2025 pour -6ms timeouts)
+      silencePaddingFrames: 1000,
+    });
 
-    player.play(audioRessourse)
-
-    player.on(AudioPlayerStatus.Idle ,() => {
-        connection.destroy()
-    })
+    resource.volume?.setVolume(1.0);  // Max volume safe
+    player.play(resource);
 
     player.on(AudioPlayerStatus.Playing, () => {
-      console.log('playing')
-    })
+      console.log('▶️ Playing — attends 1s pour buffer, puis SON !');
+    });
+
+    player.on(AudioPlayerStatus.Idle, () => {
+      console.log('⏹️ Idle — fin OK');
+      connection.destroy();  // Flush final
+    });
   }
 })
